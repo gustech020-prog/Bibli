@@ -1,4 +1,4 @@
-const STORAGE_KEY = "bibli-flow-data";
+const API_URL = "api.php";
 const THEME_KEY = "bibli-flow-theme";
 const RENTAL_LIMIT_DAYS = 10;
 const CPF_DIGITS = 11;
@@ -20,12 +20,7 @@ const TRASH_ICON = `
   <path d="M14 11v6"></path>
 </svg>`;
 
-const state = {
-  books: [],
-  clients: [],
-  rentals: [],
-};
-
+const state = { books: [], clients: [], rentals: [] };
 let editingBookId = null;
 let editingClientId = null;
 
@@ -55,25 +50,25 @@ const els = {
   clientEditCancel: document.querySelector("#clientEditCancel"),
 };
 
-function loadData() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return;
-
-  try {
-    const data = JSON.parse(raw);
-    state.books = Array.isArray(data.books) ? data.books : [];
-    state.clients = Array.isArray(data.clients) ? data.clients : [];
-    state.rentals = (Array.isArray(data.rentals) ? data.rentals : []).map((r) => ({
-      ...r,
-      returnedDate: r.returnedDate || null,
-    }));
-  } catch {
-    notify("Dados locais inválidos. Reiniciando sistema.");
+async function api(action, payload = {}, method = "POST") {
+  const url = `${API_URL}?action=${encodeURIComponent(action)}`;
+  const res = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: method === "POST" ? JSON.stringify(payload) : undefined,
+  });
+  const data = await res.json();
+  if (!res.ok || data.ok === false) {
+    throw new Error(data.message || "Falha na comunicação com servidor.");
   }
+  return data;
 }
 
-function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+async function loadState() {
+  const data = await api("state", {}, "GET");
+  state.books = data.state.books || [];
+  state.clients = data.state.clients || [];
+  state.rentals = data.state.rentals || [];
 }
 
 function notify(message) {
@@ -95,7 +90,6 @@ function initTheme() {
   const savedTheme = localStorage.getItem(THEME_KEY);
   const theme = savedTheme === "dark" ? "dark" : "light";
   applyTheme(theme);
-
   if (!els.themeToggle) return;
   els.themeToggle.addEventListener("click", () => {
     const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
@@ -107,9 +101,7 @@ function initTheme() {
 
 function todayISO() {
   const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
-    now.getDate()
-  ).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 function addDays(dateISO, days) {
@@ -152,14 +144,6 @@ function getClientById(id) {
   return state.clients.find((c) => c.id === id);
 }
 
-function ensureDataCompatibility() {
-  state.clients = state.clients.map((client) => ({
-    ...client,
-    cpf: sanitizeDigits(client.cpf || ""),
-    phone: sanitizeDigits(client.phone || ""),
-  }));
-}
-
 function updateStats() {
   if (!els.booksCount || !els.clientsCount || !els.overdueCount || !els.overdueCard) return;
   const overdueCount = activeRentals().filter((r) => isOverdue(r.dueDate)).length;
@@ -173,31 +157,17 @@ function renderBookOptions() {
   if (!els.rentalBook) return;
   const selectedValue = els.rentalBook.value;
   const books = availableBooks();
-  const options = [
-    `<option value="">Selecione um livro</option>`,
-    ...books.map((book) => `<option value="${book.id}">${book.id} • ${book.title}</option>`),
-  ];
-  els.rentalBook.innerHTML = options.join("");
+  els.rentalBook.innerHTML = [`<option value="">Selecione um livro</option>`, ...books.map((book) => `<option value="${book.id}">${book.id} • ${book.title}</option>`)].join("");
   els.rentalBook.disabled = books.length === 0;
-
-  if (books.some((book) => book.id === selectedValue)) {
-    els.rentalBook.value = selectedValue;
-  }
+  if (books.some((book) => book.id === selectedValue)) els.rentalBook.value = selectedValue;
 }
 
 function renderClientOptions() {
   if (!els.rentalClient) return;
   const selectedValue = els.rentalClient.value;
-  const options = [
-    `<option value="">Selecione um cliente</option>`,
-    ...state.clients.map((client) => `<option value="${client.id}">${client.id} • ${client.name}</option>`),
-  ];
-  els.rentalClient.innerHTML = options.join("");
+  els.rentalClient.innerHTML = [`<option value="">Selecione um cliente</option>`, ...state.clients.map((client) => `<option value="${client.id}">${client.id} • ${client.name}</option>`)].join("");
   els.rentalClient.disabled = state.clients.length === 0;
-
-  if (state.clients.some((client) => client.id === selectedValue)) {
-    els.rentalClient.value = selectedValue;
-  }
+  if (state.clients.some((client) => client.id === selectedValue)) els.rentalClient.value = selectedValue;
 }
 
 function renderBooks() {
@@ -206,25 +176,18 @@ function renderBooks() {
     els.booksTable.innerHTML = `<tr><td colspan="5">Nenhum livro cadastrado.</td></tr>`;
     return;
   }
-
   const rentedIds = new Set(activeRentals().map((r) => r.bookId));
-
   els.booksTable.innerHTML = state.books
-    .map((book) => {
-      const busy = rentedIds.has(book.id);
-      return `<tr>
+    .map((book) => `<tr>
         <td>${book.id}</td>
         <td>${book.title}</td>
         <td>${book.author}</td>
-        <td><span class="status ${busy ? "status-danger" : "status-ok"}">${
-        busy ? "Emprestado" : "Disponível"
-      }</span></td>
+        <td><span class="status ${rentedIds.has(book.id) ? "status-danger" : "status-ok"}">${rentedIds.has(book.id) ? "Emprestado" : "Disponível"}</span></td>
         <td class="row-actions">
           <button type="button" class="action-btn icon-btn" title="Editar livro" aria-label="Editar livro" data-edit-book="${book.id}">${EDIT_ICON}</button>
           <button type="button" class="action-btn warn icon-btn" title="Excluir livro" aria-label="Excluir livro" data-remove-book="${book.id}">${TRASH_ICON}</button>
         </td>
-      </tr>`;
-    })
+      </tr>`)
     .join("");
 }
 
@@ -234,10 +197,8 @@ function renderClients() {
     els.clientsTable.innerHTML = `<tr><td colspan="5">Nenhum cliente cadastrado.</td></tr>`;
     return;
   }
-
   els.clientsTable.innerHTML = state.clients
-    .map(
-      (client) => `<tr>
+    .map((client) => `<tr>
       <td>${client.id}</td>
       <td>${client.name}</td>
       <td>${client.cpf || "-"}</td>
@@ -246,8 +207,7 @@ function renderClients() {
         <button type="button" class="action-btn icon-btn" title="Editar cliente" aria-label="Editar cliente" data-edit-client="${client.id}">${EDIT_ICON}</button>
         <button type="button" class="action-btn warn icon-btn" title="Excluir cliente" aria-label="Excluir cliente" data-remove-client="${client.id}">${TRASH_ICON}</button>
       </td>
-    </tr>`
-    )
+    </tr>`)
     .join("");
 }
 
@@ -258,7 +218,6 @@ function renderActiveRentals() {
     els.activeRentalsTable.innerHTML = `<tr><td colspan="7">Nenhum empréstimo ativo.</td></tr>`;
     return;
   }
-
   els.activeRentalsTable.innerHTML = rentals
     .map((rental) => {
       const overdue = isOverdue(rental.dueDate);
@@ -270,9 +229,7 @@ function renderActiveRentals() {
       <td>${fmtDate(rental.startDate)}</td>
       <td>${fmtDate(rental.dueDate)}</td>
       <td>-</td>
-      <td><span class="status ${overdue ? "status-danger" : "status-ok"}">${
-        overdue ? "Atrasado" : "No prazo"
-      }</span></td>
+      <td><span class="status ${overdue ? "status-danger" : "status-ok"}">${overdue ? "Atrasado" : "No prazo"}</span></td>
       <td><button type="button" class="action-btn" data-return-book="${rental.bookId}">Dar baixa</button></td>
     </tr>`;
     })
@@ -285,17 +242,12 @@ function renderRentalsHistory() {
     els.rentalsHistoryTable.innerHTML = `<tr><td colspan="7">Nenhum histórico de empréstimo.</td></tr>`;
     return;
   }
-
   els.rentalsHistoryTable.innerHTML = state.rentals
     .map((rental, idx) => {
       const book = getBookById(rental.bookId);
       const client = getClientById(rental.clientId);
-      const status = rental.returnedDate
-        ? `<span class="status status-ok">Devolvido</span>`
-        : `<span class="status ${isOverdue(rental.dueDate) ? "status-danger" : "status-ok"}">${
-            isOverdue(rental.dueDate) ? "Atrasado" : "Ativo"
-          }</span>`;
-
+      const overdue = isOverdue(rental.dueDate);
+      const status = rental.returnedDate ? `<span class="status status-ok">Devolvido</span>` : `<span class="status ${overdue ? "status-danger" : "status-ok"}">${overdue ? "Atrasado" : "Ativo"}</span>`;
       return `<tr>
       <td><input type="checkbox" class="history-check" data-history-index="${idx}" /></td>
       <td>${book ? book.title : rental.bookId}</td>
@@ -331,104 +283,68 @@ function renderAll() {
   updateStats();
 }
 
-function handleBookSubmit(e) {
+async function refreshAndRender() {
+  await loadState();
+  renderAll();
+}
+
+async function handleBookSubmit(e) {
   e.preventDefault();
   const id = sanitizeDigits(document.querySelector("#bookId")?.value.trim() || "");
   const title = document.querySelector("#bookTitle")?.value.trim() || "";
   const author = document.querySelector("#bookAuthor")?.value.trim() || "";
 
-  if (!id) {
-    notify("ID do livro deve conter apenas números.");
-    return;
+  if (!id) return notify("ID do livro deve conter apenas números.");
+  try {
+    await api("create_book", { id, title, author });
+    await refreshAndRender();
+    e.target.reset();
+    notify("Livro cadastrado com sucesso.");
+  } catch (err) {
+    notify(err.message);
   }
-
-  if (state.books.some((book) => book.id === id)) {
-    notify("Já existe um livro com este ID.");
-    return;
-  }
-
-  state.books.push({ id, title, author });
-  saveData();
-  renderAll();
-  e.target.reset();
-  notify("Livro cadastrado com sucesso.");
 }
 
-function handleClientSubmit(e) {
+async function handleClientSubmit(e) {
   e.preventDefault();
-  const id = document.querySelector("#clientId")?.value.trim() || "";
   const name = document.querySelector("#clientName")?.value.trim() || "";
   const cpf = sanitizeDigits(document.querySelector("#clientCpf")?.value.trim() || "");
   const phone = sanitizeDigits(document.querySelector("#clientPhone")?.value.trim() || "");
 
-  if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test(name)) {
-    notify("Nome do cliente deve conter apenas letras.");
-    return;
-  }
+  if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test(name)) return notify("Nome do cliente deve conter apenas letras.");
+  if (cpf.length !== CPF_DIGITS) return notify("CPF deve ter 11 números.");
+  if (phone.length < PHONE_MIN_DIGITS || phone.length > PHONE_MAX_DIGITS) return notify("Telefone deve ter 10 ou 11 números.");
 
-  if (cpf.length !== CPF_DIGITS) {
-    notify("CPF deve ter 11 números.");
-    return;
+  try {
+    await api("create_client", { name, cpf, phone });
+    await refreshAndRender();
+    e.target.reset();
+    notify("Cliente cadastrado com sucesso.");
+  } catch (err) {
+    notify(err.message);
   }
-
-  if (phone.length < PHONE_MIN_DIGITS || phone.length > PHONE_MAX_DIGITS) {
-    notify("Telefone deve ter 10 ou 11 números.");
-    return;
-  }
-
-  if (state.clients.some((client) => client.id === id)) {
-    notify("Já existe um cliente com este ID.");
-    return;
-  }
-
-  if (state.clients.some((client) => client.cpf === cpf)) {
-    notify("Já existe um cliente com este CPF.");
-    return;
-  }
-
-  state.clients.push({ id, name, cpf, phone });
-  saveData();
-  renderAll();
-  e.target.reset();
-  notify("Cliente cadastrado com sucesso.");
 }
 
-function handleBookEditSubmit(e) {
+async function handleBookEditSubmit(e) {
   e.preventDefault();
   if (!editingBookId) return;
   const id = sanitizeDigits(document.querySelector("#bookEditId")?.value.trim() || "");
   const title = document.querySelector("#bookEditTitle")?.value.trim() || "";
   const author = document.querySelector("#bookEditAuthor")?.value.trim() || "";
+  if (!id) return notify("ID do livro deve conter apenas números.");
 
-  if (!id) {
-    notify("ID do livro deve conter apenas números.");
-    return;
+  try {
+    await api("update_book", { currentId: editingBookId, id, title, author });
+    editingBookId = null;
+    closeModal(els.bookEditModal);
+    await refreshAndRender();
+    notify("Livro atualizado com sucesso.");
+  } catch (err) {
+    notify(err.message);
   }
-
-  if (state.books.some((book) => book.id === id && book.id !== editingBookId)) {
-    notify("Já existe um livro com este ID.");
-    return;
-  }
-
-  const target = state.books.find((b) => b.id === editingBookId);
-  if (!target) return;
-
-  state.rentals.forEach((r) => {
-    if (r.bookId === editingBookId) r.bookId = id;
-  });
-
-  target.id = id;
-  target.title = title;
-  target.author = author;
-
-  editingBookId = null;
-  closeModal(els.bookEditModal);
-  saveData();
-  renderAll();
-  notify("Livro atualizado com sucesso.");
 }
 
-function handleClientEditSubmit(e) {
+async function handleClientEditSubmit(e) {
   e.preventDefault();
   if (!editingClientId) return;
   const id = document.querySelector("#clientEditId")?.value.trim() || "";
@@ -436,110 +352,53 @@ function handleClientEditSubmit(e) {
   const cpf = sanitizeDigits(document.querySelector("#clientEditCpf")?.value.trim() || "");
   const phone = sanitizeDigits(document.querySelector("#clientEditPhone")?.value.trim() || "");
 
-  if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test(name)) {
-    notify("Nome do cliente deve conter apenas letras.");
-    return;
+  if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test(name)) return notify("Nome do cliente deve conter apenas letras.");
+  if (cpf.length !== CPF_DIGITS) return notify("CPF deve ter 11 números.");
+  if (phone.length < PHONE_MIN_DIGITS || phone.length > PHONE_MAX_DIGITS) return notify("Telefone deve ter 10 ou 11 números.");
+
+  try {
+    await api("update_client", { id, name, cpf, phone });
+    editingClientId = null;
+    closeModal(els.clientEditModal);
+    await refreshAndRender();
+    notify("Cliente atualizado com sucesso.");
+  } catch (err) {
+    notify(err.message);
   }
-
-  if (cpf.length !== CPF_DIGITS) {
-    notify("CPF deve ter 11 números.");
-    return;
-  }
-
-  if (phone.length < PHONE_MIN_DIGITS || phone.length > PHONE_MAX_DIGITS) {
-    notify("Telefone deve ter 10 ou 11 números.");
-    return;
-  }
-
-  if (state.clients.some((client) => client.id === id && client.id !== editingClientId)) {
-    notify("Já existe um cliente com este ID.");
-    return;
-  }
-
-  if (state.clients.some((client) => client.cpf === cpf && client.id !== editingClientId)) {
-    notify("Já existe um cliente com este CPF.");
-    return;
-  }
-
-  const target = state.clients.find((c) => c.id === editingClientId);
-  if (!target) return;
-
-  state.rentals.forEach((r) => {
-    if (r.clientId === editingClientId) r.clientId = id;
-  });
-
-  target.id = id;
-  target.name = name;
-  target.cpf = cpf;
-  target.phone = phone;
-
-  editingClientId = null;
-  closeModal(els.clientEditModal);
-  saveData();
-  renderAll();
-  notify("Cliente atualizado com sucesso.");
 }
 
-function handleRentalSubmit(e) {
+async function handleRentalSubmit(e) {
   e.preventDefault();
   const bookId = els.rentalBook?.value;
   const clientId = els.rentalClient?.value;
   const startDate = els.rentalStart?.value;
-
-  if (!bookId || !clientId || !startDate) {
-    notify("Selecione livro, cliente e data de início.");
-    return;
-  }
-
-  const book = getBookById(bookId);
-  const client = getClientById(clientId);
-
-  if (!book) {
-    notify("Livro selecionado é inválido. Atualize a página e selecione novamente.");
-    renderBookOptions();
-    return;
-  }
-
-  if (!client) {
-    notify("Cliente selecionado é inválido. Atualize a página e selecione novamente.");
-    renderClientOptions();
-    return;
-  }
-
-  if (activeRentals().some((rental) => rental.bookId === bookId)) {
-    notify("Este livro já está emprestado.");
-    renderBookOptions();
-    return;
-  }
+  if (!bookId || !clientId || !startDate) return notify("Selecione livro, cliente e data de início.");
 
   const dueDate = addDays(startDate, RENTAL_LIMIT_DAYS).toISOString().slice(0, 10);
-  state.rentals.push({ bookId, clientId, startDate, dueDate, returnedDate: null });
-  saveData();
-  renderAll();
-  e.target.reset();
-  if (els.rentalStart) {
-    els.rentalStart.value = todayISO();
+  try {
+    await api("create_rental", { bookId, clientId, startDate, dueDate });
+    await refreshAndRender();
+    e.target.reset();
+    if (els.rentalStart) els.rentalStart.value = todayISO();
+    notify("Empréstimo registrado por 10 dias.");
+  } catch (err) {
+    notify(err.message);
   }
-  notify("Empréstimo registrado por 10 dias.");
 }
 
-function deleteSelectedHistory() {
-  const selected = Array.from(document.querySelectorAll('.history-check:checked')).map((el) =>
-    Number(el.dataset.historyIndex)
-  );
-
-  if (!selected.length) {
-    notify("Selecione itens do histórico para apagar.");
-    return;
+async function deleteSelectedHistory() {
+  const selected = Array.from(document.querySelectorAll(".history-check:checked")).map((el) => Number(el.dataset.historyIndex));
+  if (!selected.length) return notify("Selecione itens do histórico para apagar.");
+  try {
+    await api("delete_history", { indexes: selected });
+    await refreshAndRender();
+    notify("Itens selecionados do histórico foram apagados.");
+  } catch (err) {
+    notify(err.message);
   }
-
-  state.rentals = state.rentals.filter((_, idx) => !selected.includes(idx));
-  saveData();
-  renderAll();
-  notify("Itens selecionados do histórico foram apagados.");
 }
 
-function handleTableClick(e) {
+async function handleTableClick(e) {
   const btn = e.target.closest("button");
   if (!btn) return;
 
@@ -572,80 +431,49 @@ function handleTableClick(e) {
     return;
   }
 
-  if (returnBook) {
-    const rental = state.rentals.find((item) => item.bookId === returnBook && !item.returnedDate);
-    if (rental) {
-      rental.returnedDate = todayISO();
+  try {
+    if (returnBook) {
+      await api("return_rental", { bookId: returnBook, returnedDate: todayISO() });
       notify("Livro devolvido e registrado no histórico.");
     }
-  }
 
-  if (removeBook) {
-    if (activeRentals().some((r) => r.bookId === removeBook)) {
-      notify("Não é possível excluir um livro emprestado.");
-      return;
+    if (removeBook) {
+      await api("delete_book", { id: removeBook });
+      notify("Livro excluído.");
     }
-    state.books = state.books.filter((book) => book.id !== removeBook);
-    notify("Livro excluído.");
-  }
 
-  if (removeClient) {
-    if (activeRentals().some((r) => r.clientId === removeClient)) {
-      notify("Não é possível excluir cliente com empréstimo ativo.");
-      return;
+    if (removeClient) {
+      await api("delete_client", { id: removeClient });
+      notify("Cliente excluído.");
     }
-    state.clients = state.clients.filter((client) => client.id !== removeClient);
-    notify("Cliente excluído.");
-  }
 
-  saveData();
-  renderAll();
+    await refreshAndRender();
+  } catch (err) {
+    notify(err.message);
+  }
 }
 
 function bindNumericInput(selector, maxLength) {
   const input = document.querySelector(selector);
   if (!input) return;
-
   input.addEventListener("input", () => {
     const digitsOnly = sanitizeDigits(input.value);
     input.value = maxLength ? digitsOnly.slice(0, maxLength) : digitsOnly;
   });
 }
 
-function init() {
+async function init() {
   initTheme();
-  loadData();
-  ensureDataCompatibility();
-  saveData();
 
-  if (els.rentalStart) {
-    els.rentalStart.value = todayISO();
-  }
-
-  if (els.bookForm) {
-    els.bookForm.addEventListener("submit", handleBookSubmit);
-  }
-  if (els.clientForm) {
-    els.clientForm.addEventListener("submit", handleClientSubmit);
-  }
-  if (els.bookEditForm) {
-    els.bookEditForm.addEventListener("submit", handleBookEditSubmit);
-  }
-  if (els.clientEditForm) {
-    els.clientEditForm.addEventListener("submit", handleClientEditSubmit);
-  }
-  if (els.bookEditCancel) {
-    els.bookEditCancel.addEventListener("click", () => closeModal(els.bookEditModal));
-  }
-  if (els.clientEditCancel) {
-    els.clientEditCancel.addEventListener("click", () => closeModal(els.clientEditModal));
-  }
-  if (els.rentalForm) {
-    els.rentalForm.addEventListener("submit", handleRentalSubmit);
-  }
-  if (els.deleteHistoryBtn) {
-    els.deleteHistoryBtn.addEventListener("click", deleteSelectedHistory);
-  }
+  if (els.rentalStart) els.rentalStart.value = todayISO();
+  if (els.bookForm) els.bookForm.addEventListener("submit", handleBookSubmit);
+  if (els.clientForm) els.clientForm.addEventListener("submit", handleClientSubmit);
+  if (els.bookEditForm) els.bookEditForm.addEventListener("submit", handleBookEditSubmit);
+  if (els.clientEditForm) els.clientEditForm.addEventListener("submit", handleClientEditSubmit);
+  if (els.bookEditCancel) els.bookEditCancel.addEventListener("click", () => closeModal(els.bookEditModal));
+  if (els.clientEditCancel) els.clientEditCancel.addEventListener("click", () => closeModal(els.clientEditModal));
+  if (els.rentalForm) els.rentalForm.addEventListener("submit", handleRentalSubmit);
+  if (els.deleteHistoryBtn) els.deleteHistoryBtn.addEventListener("click", deleteSelectedHistory);
 
   document.body.addEventListener("click", handleTableClick);
   bindNumericInput("#bookId");
@@ -655,7 +483,11 @@ function init() {
   bindNumericInput("#clientEditCpf", CPF_DIGITS);
   bindNumericInput("#clientEditPhone", PHONE_MAX_DIGITS);
 
-  renderAll();
+  try {
+    await refreshAndRender();
+  } catch (err) {
+    notify("Não foi possível carregar dados do servidor.");
+  }
 }
 
 init();
