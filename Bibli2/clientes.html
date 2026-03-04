@@ -101,6 +101,23 @@
       </section>
     </main>
 
+
+    <div id="clientEditModal" class="modal" aria-hidden="true">
+      <div class="modal-card">
+        <h3>Editar Cliente</h3>
+        <form id="clientEditForm" class="client-form-grid modal-grid-client">
+          <input type="text" id="clientEditId" placeholder="ID do cliente" required />
+          <input type="text" id="clientEditName" placeholder="Nome" required />
+          <input type="text" id="clientEditCpf" placeholder="CPF (11 dígitos)" inputmode="numeric" minlength="11" maxlength="11" required />
+          <input type="text" id="clientEditPhone" placeholder="Telefone (10 ou 11 dígitos)" inputmode="numeric" minlength="10" maxlength="11" required />
+          <div class="modal-actions">
+            <button type="button" class="action-btn" id="clientEditCancel">Cancelar</button>
+            <button type="submit">Salvar alteração</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <div id="toast" class="toast" aria-live="polite"></div>
 
     <script src="script.js"></script>

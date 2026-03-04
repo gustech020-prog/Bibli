@@ -5,6 +5,21 @@ const CPF_DIGITS = 11;
 const PHONE_MIN_DIGITS = 10;
 const PHONE_MAX_DIGITS = 11;
 
+const EDIT_ICON = `
+<svg viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M4 20h4l10.2-10.2a2.2 2.2 0 0 0 0-3.1l-.9-.9a2.2 2.2 0 0 0-3.1 0L4 16v4z"></path>
+  <path d="M12.5 7.5l4 4"></path>
+</svg>`;
+
+const TRASH_ICON = `
+<svg viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M4 7h16"></path>
+  <path d="M9 7V5h6v2"></path>
+  <path d="M7 7l1 12h8l1-12"></path>
+  <path d="M10 11v6"></path>
+  <path d="M14 11v6"></path>
+</svg>`;
+
 const state = {
   books: [],
   clients: [],
@@ -32,6 +47,12 @@ const els = {
   toast: document.querySelector("#toast"),
   themeToggle: document.querySelector("#themeToggle"),
   deleteHistoryBtn: document.querySelector("#deleteHistoryBtn"),
+  bookEditModal: document.querySelector("#bookEditModal"),
+  bookEditForm: document.querySelector("#bookEditForm"),
+  bookEditCancel: document.querySelector("#bookEditCancel"),
+  clientEditModal: document.querySelector("#clientEditModal"),
+  clientEditForm: document.querySelector("#clientEditForm"),
+  clientEditCancel: document.querySelector("#clientEditCancel"),
 };
 
 function loadData() {
@@ -199,8 +220,8 @@ function renderBooks() {
         busy ? "Emprestado" : "Disponível"
       }</span></td>
         <td class="row-actions">
-          <button type="button" class="action-btn icon-btn" title="Editar livro" aria-label="Editar livro" data-edit-book="${book.id}">✏️</button>
-          <button type="button" class="action-btn warn icon-btn" title="Excluir livro" aria-label="Excluir livro" data-remove-book="${book.id}">🗑</button>
+          <button type="button" class="action-btn icon-btn" title="Editar livro" aria-label="Editar livro" data-edit-book="${book.id}">${EDIT_ICON}</button>
+          <button type="button" class="action-btn warn icon-btn" title="Excluir livro" aria-label="Excluir livro" data-remove-book="${book.id}">${TRASH_ICON}</button>
         </td>
       </tr>`;
     })
@@ -222,8 +243,8 @@ function renderClients() {
       <td>${client.cpf || "-"}</td>
       <td>${client.phone || "-"}</td>
       <td class="row-actions">
-        <button type="button" class="action-btn icon-btn" title="Editar cliente" aria-label="Editar cliente" data-edit-client="${client.id}">✏️</button>
-        <button type="button" class="action-btn warn icon-btn" title="Excluir cliente" aria-label="Excluir cliente" data-remove-client="${client.id}">🗑</button>
+        <button type="button" class="action-btn icon-btn" title="Editar cliente" aria-label="Editar cliente" data-edit-client="${client.id}">${EDIT_ICON}</button>
+        <button type="button" class="action-btn warn icon-btn" title="Excluir cliente" aria-label="Excluir cliente" data-remove-client="${client.id}">${TRASH_ICON}</button>
       </td>
     </tr>`
     )
@@ -288,6 +309,18 @@ function renderRentalsHistory() {
     .join("");
 }
 
+function openModal(modal) {
+  if (!modal) return;
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeModal(modal) {
+  if (!modal) return;
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden", "true");
+}
+
 function renderAll() {
   renderBooks();
   renderClients();
@@ -298,22 +331,9 @@ function renderAll() {
   updateStats();
 }
 
-function setBookFormMode(editing) {
-  if (!els.bookForm) return;
-  const submitBtn = els.bookForm.querySelector('button[type="submit"]');
-  if (submitBtn) submitBtn.textContent = editing ? "Atualizar Livro" : "Salvar Livro";
-}
-
-function setClientFormMode(editing) {
-  if (!els.clientForm) return;
-  const submitBtn = els.clientForm.querySelector('button[type="submit"]');
-  if (submitBtn) submitBtn.textContent = editing ? "Atualizar Cliente" : "Salvar Cliente";
-}
-
 function handleBookSubmit(e) {
   e.preventDefault();
-  const idInput = document.querySelector("#bookId");
-  const id = sanitizeDigits(idInput?.value.trim() || "");
+  const id = sanitizeDigits(document.querySelector("#bookId")?.value.trim() || "");
   const title = document.querySelector("#bookTitle")?.value.trim() || "";
   const author = document.querySelector("#bookAuthor")?.value.trim() || "";
 
@@ -322,39 +342,16 @@ function handleBookSubmit(e) {
     return;
   }
 
-  if (editingBookId && editingBookId !== id && state.books.some((book) => book.id === id)) {
+  if (state.books.some((book) => book.id === id)) {
     notify("Já existe um livro com este ID.");
     return;
   }
 
-  if (!editingBookId && state.books.some((book) => book.id === id)) {
-    notify("Já existe um livro com este ID.");
-    return;
-  }
-
-  if (editingBookId) {
-    const target = state.books.find((b) => b.id === editingBookId);
-    if (target) {
-      const active = state.rentals.find((r) => r.bookId === editingBookId && !r.returnedDate);
-      if (active) active.bookId = id;
-      state.rentals.forEach((r) => {
-        if (r.bookId === editingBookId) r.bookId = id;
-      });
-      target.id = id;
-      target.title = title;
-      target.author = author;
-    }
-    editingBookId = null;
-    setBookFormMode(false);
-    notify("Livro atualizado com sucesso.");
-  } else {
-    state.books.push({ id, title, author });
-    notify("Livro cadastrado com sucesso.");
-  }
-
+  state.books.push({ id, title, author });
   saveData();
   renderAll();
   e.target.reset();
+  notify("Livro cadastrado com sucesso.");
 }
 
 function handleClientSubmit(e) {
@@ -379,12 +376,82 @@ function handleClientSubmit(e) {
     return;
   }
 
-  if (editingClientId && editingClientId !== id && state.clients.some((c) => c.id === id)) {
+  if (state.clients.some((client) => client.id === id)) {
     notify("Já existe um cliente com este ID.");
     return;
   }
 
-  if (!editingClientId && state.clients.some((client) => client.id === id)) {
+  if (state.clients.some((client) => client.cpf === cpf)) {
+    notify("Já existe um cliente com este CPF.");
+    return;
+  }
+
+  state.clients.push({ id, name, cpf, phone });
+  saveData();
+  renderAll();
+  e.target.reset();
+  notify("Cliente cadastrado com sucesso.");
+}
+
+function handleBookEditSubmit(e) {
+  e.preventDefault();
+  if (!editingBookId) return;
+  const id = sanitizeDigits(document.querySelector("#bookEditId")?.value.trim() || "");
+  const title = document.querySelector("#bookEditTitle")?.value.trim() || "";
+  const author = document.querySelector("#bookEditAuthor")?.value.trim() || "";
+
+  if (!id) {
+    notify("ID do livro deve conter apenas números.");
+    return;
+  }
+
+  if (state.books.some((book) => book.id === id && book.id !== editingBookId)) {
+    notify("Já existe um livro com este ID.");
+    return;
+  }
+
+  const target = state.books.find((b) => b.id === editingBookId);
+  if (!target) return;
+
+  state.rentals.forEach((r) => {
+    if (r.bookId === editingBookId) r.bookId = id;
+  });
+
+  target.id = id;
+  target.title = title;
+  target.author = author;
+
+  editingBookId = null;
+  closeModal(els.bookEditModal);
+  saveData();
+  renderAll();
+  notify("Livro atualizado com sucesso.");
+}
+
+function handleClientEditSubmit(e) {
+  e.preventDefault();
+  if (!editingClientId) return;
+  const id = document.querySelector("#clientEditId")?.value.trim() || "";
+  const name = document.querySelector("#clientEditName")?.value.trim() || "";
+  const cpf = sanitizeDigits(document.querySelector("#clientEditCpf")?.value.trim() || "");
+  const phone = sanitizeDigits(document.querySelector("#clientEditPhone")?.value.trim() || "");
+
+  if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test(name)) {
+    notify("Nome do cliente deve conter apenas letras.");
+    return;
+  }
+
+  if (cpf.length !== CPF_DIGITS) {
+    notify("CPF deve ter 11 números.");
+    return;
+  }
+
+  if (phone.length < PHONE_MIN_DIGITS || phone.length > PHONE_MAX_DIGITS) {
+    notify("Telefone deve ter 10 ou 11 números.");
+    return;
+  }
+
+  if (state.clients.some((client) => client.id === id && client.id !== editingClientId)) {
     notify("Já existe um cliente com este ID.");
     return;
   }
@@ -394,28 +461,23 @@ function handleClientSubmit(e) {
     return;
   }
 
-  if (editingClientId) {
-    const target = state.clients.find((c) => c.id === editingClientId);
-    if (target) {
-      state.rentals.forEach((r) => {
-        if (r.clientId === editingClientId) r.clientId = id;
-      });
-      target.id = id;
-      target.name = name;
-      target.cpf = cpf;
-      target.phone = phone;
-    }
-    editingClientId = null;
-    setClientFormMode(false);
-    notify("Cliente atualizado com sucesso.");
-  } else {
-    state.clients.push({ id, name, cpf, phone });
-    notify("Cliente cadastrado com sucesso.");
-  }
+  const target = state.clients.find((c) => c.id === editingClientId);
+  if (!target) return;
 
+  state.rentals.forEach((r) => {
+    if (r.clientId === editingClientId) r.clientId = id;
+  });
+
+  target.id = id;
+  target.name = name;
+  target.cpf = cpf;
+  target.phone = phone;
+
+  editingClientId = null;
+  closeModal(els.clientEditModal);
   saveData();
   renderAll();
-  e.target.reset();
+  notify("Cliente atualizado com sucesso.");
 }
 
 function handleRentalSubmit(e) {
@@ -489,26 +551,24 @@ function handleTableClick(e) {
 
   if (editBook) {
     const book = getBookById(editBook);
-    if (!book) return;
+    if (!book || !els.bookEditModal) return;
     editingBookId = editBook;
-    document.querySelector("#bookId").value = book.id;
-    document.querySelector("#bookTitle").value = book.title;
-    document.querySelector("#bookAuthor").value = book.author;
-    setBookFormMode(true);
-    notify("Editando livro.");
+    document.querySelector("#bookEditId").value = book.id;
+    document.querySelector("#bookEditTitle").value = book.title;
+    document.querySelector("#bookEditAuthor").value = book.author;
+    openModal(els.bookEditModal);
     return;
   }
 
   if (editClient) {
     const client = getClientById(editClient);
-    if (!client) return;
+    if (!client || !els.clientEditModal) return;
     editingClientId = editClient;
-    document.querySelector("#clientId").value = client.id;
-    document.querySelector("#clientName").value = client.name;
-    document.querySelector("#clientCpf").value = client.cpf;
-    document.querySelector("#clientPhone").value = client.phone;
-    setClientFormMode(true);
-    notify("Editando cliente.");
+    document.querySelector("#clientEditId").value = client.id;
+    document.querySelector("#clientEditName").value = client.name;
+    document.querySelector("#clientEditCpf").value = client.cpf;
+    document.querySelector("#clientEditPhone").value = client.phone;
+    openModal(els.clientEditModal);
     return;
   }
 
@@ -564,11 +624,21 @@ function init() {
 
   if (els.bookForm) {
     els.bookForm.addEventListener("submit", handleBookSubmit);
-    setBookFormMode(false);
   }
   if (els.clientForm) {
     els.clientForm.addEventListener("submit", handleClientSubmit);
-    setClientFormMode(false);
+  }
+  if (els.bookEditForm) {
+    els.bookEditForm.addEventListener("submit", handleBookEditSubmit);
+  }
+  if (els.clientEditForm) {
+    els.clientEditForm.addEventListener("submit", handleClientEditSubmit);
+  }
+  if (els.bookEditCancel) {
+    els.bookEditCancel.addEventListener("click", () => closeModal(els.bookEditModal));
+  }
+  if (els.clientEditCancel) {
+    els.clientEditCancel.addEventListener("click", () => closeModal(els.clientEditModal));
   }
   if (els.rentalForm) {
     els.rentalForm.addEventListener("submit", handleRentalSubmit);
@@ -579,8 +649,11 @@ function init() {
 
   document.body.addEventListener("click", handleTableClick);
   bindNumericInput("#bookId");
+  bindNumericInput("#bookEditId");
   bindNumericInput("#clientCpf", CPF_DIGITS);
   bindNumericInput("#clientPhone", PHONE_MAX_DIGITS);
+  bindNumericInput("#clientEditCpf", CPF_DIGITS);
+  bindNumericInput("#clientEditPhone", PHONE_MAX_DIGITS);
 
   renderAll();
 }

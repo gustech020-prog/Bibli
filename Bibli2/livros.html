@@ -84,6 +84,22 @@
       </section>
     </main>
 
+
+    <div id="bookEditModal" class="modal" aria-hidden="true">
+      <div class="modal-card">
+        <h3>Editar Livro</h3>
+        <form id="bookEditForm" class="form-grid modal-grid">
+          <input type="text" id="bookEditId" placeholder="ID do livro" inputmode="numeric" required />
+          <input type="text" id="bookEditTitle" placeholder="Título" required />
+          <input type="text" id="bookEditAuthor" placeholder="Autor" required />
+          <div class="modal-actions">
+            <button type="button" class="action-btn" id="bookEditCancel">Cancelar</button>
+            <button type="submit">Salvar alteração</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <div id="toast" class="toast" aria-live="polite"></div>
 
     <script src="script.js"></script>
