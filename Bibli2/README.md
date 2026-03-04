@@ -10,11 +10,12 @@ Sistema web para gestão de biblioteca, com cadastro de livros/clientes e contro
 - Vencimento automático em **10 dias**.
 - Destaque visual para empréstimos atrasados.
 - Indicador de quantidade de atrasos no topo.
-- Persistência compartilhada no servidor (arquivo `data/storage.json`) para todos os usuários.
+- Persistência compartilhada em **SQL (SQLite)** para todos os usuários conectados ao servidor.
 
 ## Requisitos
 
 - PHP 7.4+
+- Extensão PDO SQLite habilitada
 
 ## Como rodar (modo compartilhado)
 
@@ -33,8 +34,8 @@ Depois acesse:
 ## Como funciona o armazenamento compartilhado
 
 - O frontend usa `fetch` para chamar `api.php`.
-- O backend salva os dados em `data/storage.json`.
-- Qualquer usuário acessando a mesma instância do servidor verá as mesmas alterações.
+- O backend salva dados em banco SQL SQLite (`data/bibli.db`).
+- Todos os usuários da mesma instância do servidor enxergam as mesmas alterações.
 
 ## Produção (multiusuário real)
 
@@ -42,4 +43,4 @@ Para uso real em rede/produção:
 
 1. Hospede em Apache/Nginx + PHP 7.4+.
 2. Garanta permissão de escrita em `Bibli2/data/`.
-3. (Recomendado) migrar para banco de dados MySQL/PostgreSQL em vez de JSON para alta concorrência e auditoria.
+3. Para alto volume, substitua SQLite por MySQL/PostgreSQL mantendo a mesma camada de API.
