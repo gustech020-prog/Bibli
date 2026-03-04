@@ -61,7 +61,10 @@
 
     <main class="single-layout">
       <section class="panel panel-wide">
-        <h2>Gerenciar Empréstimos</h2>
+        <div class="panel-title-row">
+          <h2>Gerenciar Empréstimos</h2>
+          <button type="button" id="deleteHistoryBtn" class="action-btn warn">Apagar selecionados</button>
+        </div>
         <form id="rentalForm" class="form-grid rental-grid">
           <select id="rentalBook" required>
             <option value="">Selecione um livro</option>
@@ -94,6 +97,7 @@
         <table>
           <thead>
             <tr>
+              <th></th>
               <th>Livro</th>
               <th>Cliente</th>
               <th>Início</th>

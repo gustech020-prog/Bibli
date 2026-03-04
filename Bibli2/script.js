@@ -11,6 +11,9 @@ const state = {
   rentals: [],
 };
 
+let editingBookId = null;
+let editingClientId = null;
+
 const els = {
   bookForm: document.querySelector("#bookForm"),
   clientForm: document.querySelector("#clientForm"),
@@ -28,6 +31,7 @@ const els = {
   overdueCard: document.querySelector("#overdueCard"),
   toast: document.querySelector("#toast"),
   themeToggle: document.querySelector("#themeToggle"),
+  deleteHistoryBtn: document.querySelector("#deleteHistoryBtn"),
 };
 
 function loadData() {
@@ -65,7 +69,6 @@ function applyTheme(theme) {
   }
   document.documentElement.style.backgroundColor = "";
 }
-
 
 function initTheme() {
   const savedTheme = localStorage.getItem(THEME_KEY);
@@ -195,7 +198,10 @@ function renderBooks() {
         <td><span class="status ${busy ? "status-danger" : "status-ok"}">${
         busy ? "Emprestado" : "Disponível"
       }</span></td>
-        <td><button class="action-btn warn" data-remove-book="${book.id}">Excluir</button></td>
+        <td>
+          <button class="action-btn" data-edit-book="${book.id}">Editar</button>
+          <button class="action-btn warn" data-remove-book="${book.id}">Excluir</button>
+        </td>
       </tr>`;
     })
     .join("");
@@ -215,7 +221,10 @@ function renderClients() {
       <td>${client.name}</td>
       <td>${client.cpf || "-"}</td>
       <td>${client.phone || "-"}</td>
-      <td><button class="action-btn warn" data-remove-client="${client.id}">Excluir</button></td>
+      <td>
+        <button class="action-btn" data-edit-client="${client.id}">Editar</button>
+        <button class="action-btn warn" data-remove-client="${client.id}">Excluir</button>
+      </td>
     </tr>`
     )
     .join("");
@@ -252,12 +261,12 @@ function renderActiveRentals() {
 function renderRentalsHistory() {
   if (!els.rentalsHistoryTable) return;
   if (!state.rentals.length) {
-    els.rentalsHistoryTable.innerHTML = `<tr><td colspan="6">Nenhum histórico de empréstimo.</td></tr>`;
+    els.rentalsHistoryTable.innerHTML = `<tr><td colspan="7">Nenhum histórico de empréstimo.</td></tr>`;
     return;
   }
 
   els.rentalsHistoryTable.innerHTML = state.rentals
-    .map((rental) => {
+    .map((rental, idx) => {
       const book = getBookById(rental.bookId);
       const client = getClientById(rental.clientId);
       const status = rental.returnedDate
@@ -267,6 +276,7 @@ function renderRentalsHistory() {
           }</span>`;
 
       return `<tr>
+      <td><input type="checkbox" class="history-check" data-history-index="${idx}" /></td>
       <td>${book ? book.title : rental.bookId}</td>
       <td>${client ? client.name : rental.clientId}</td>
       <td>${fmtDate(rental.startDate)}</td>
@@ -288,9 +298,22 @@ function renderAll() {
   updateStats();
 }
 
+function setBookFormMode(editing) {
+  if (!els.bookForm) return;
+  const submitBtn = els.bookForm.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = editing ? "Atualizar Livro" : "Salvar Livro";
+}
+
+function setClientFormMode(editing) {
+  if (!els.clientForm) return;
+  const submitBtn = els.clientForm.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = editing ? "Atualizar Cliente" : "Salvar Cliente";
+}
+
 function handleBookSubmit(e) {
   e.preventDefault();
-  const id = sanitizeDigits(document.querySelector("#bookId")?.value.trim() || "");
+  const idInput = document.querySelector("#bookId");
+  const id = sanitizeDigits(idInput?.value.trim() || "");
   const title = document.querySelector("#bookTitle")?.value.trim() || "";
   const author = document.querySelector("#bookAuthor")?.value.trim() || "";
 
@@ -299,16 +322,39 @@ function handleBookSubmit(e) {
     return;
   }
 
-  if (state.books.some((book) => book.id === id)) {
+  if (editingBookId && editingBookId !== id && state.books.some((book) => book.id === id)) {
     notify("Já existe um livro com este ID.");
     return;
   }
 
-  state.books.push({ id, title, author });
+  if (!editingBookId && state.books.some((book) => book.id === id)) {
+    notify("Já existe um livro com este ID.");
+    return;
+  }
+
+  if (editingBookId) {
+    const target = state.books.find((b) => b.id === editingBookId);
+    if (target) {
+      const active = state.rentals.find((r) => r.bookId === editingBookId && !r.returnedDate);
+      if (active) active.bookId = id;
+      state.rentals.forEach((r) => {
+        if (r.bookId === editingBookId) r.bookId = id;
+      });
+      target.id = id;
+      target.title = title;
+      target.author = author;
+    }
+    editingBookId = null;
+    setBookFormMode(false);
+    notify("Livro atualizado com sucesso.");
+  } else {
+    state.books.push({ id, title, author });
+    notify("Livro cadastrado com sucesso.");
+  }
+
   saveData();
   renderAll();
   e.target.reset();
-  notify("Livro cadastrado com sucesso.");
 }
 
 function handleClientSubmit(e) {
@@ -333,21 +379,43 @@ function handleClientSubmit(e) {
     return;
   }
 
-  if (state.clients.some((client) => client.id === id)) {
+  if (editingClientId && editingClientId !== id && state.clients.some((c) => c.id === id)) {
     notify("Já existe um cliente com este ID.");
     return;
   }
 
-  if (state.clients.some((client) => client.cpf === cpf)) {
+  if (!editingClientId && state.clients.some((client) => client.id === id)) {
+    notify("Já existe um cliente com este ID.");
+    return;
+  }
+
+  if (state.clients.some((client) => client.cpf === cpf && client.id !== editingClientId)) {
     notify("Já existe um cliente com este CPF.");
     return;
   }
 
-  state.clients.push({ id, name, cpf, phone });
+  if (editingClientId) {
+    const target = state.clients.find((c) => c.id === editingClientId);
+    if (target) {
+      state.rentals.forEach((r) => {
+        if (r.clientId === editingClientId) r.clientId = id;
+      });
+      target.id = id;
+      target.name = name;
+      target.cpf = cpf;
+      target.phone = phone;
+    }
+    editingClientId = null;
+    setClientFormMode(false);
+    notify("Cliente atualizado com sucesso.");
+  } else {
+    state.clients.push({ id, name, cpf, phone });
+    notify("Cliente cadastrado com sucesso.");
+  }
+
   saveData();
   renderAll();
   e.target.reset();
-  notify("Cliente cadastrado com sucesso.");
 }
 
 function handleRentalSubmit(e) {
@@ -393,6 +461,22 @@ function handleRentalSubmit(e) {
   notify("Empréstimo registrado por 10 dias.");
 }
 
+function deleteSelectedHistory() {
+  const selected = Array.from(document.querySelectorAll('.history-check:checked')).map((el) =>
+    Number(el.dataset.historyIndex)
+  );
+
+  if (!selected.length) {
+    notify("Selecione itens do histórico para apagar.");
+    return;
+  }
+
+  state.rentals = state.rentals.filter((_, idx) => !selected.includes(idx));
+  saveData();
+  renderAll();
+  notify("Itens selecionados do histórico foram apagados.");
+}
+
 function handleTableClick(e) {
   const btn = e.target.closest("button");
   if (!btn) return;
@@ -400,6 +484,33 @@ function handleTableClick(e) {
   const returnBook = btn.dataset.returnBook;
   const removeBook = btn.dataset.removeBook;
   const removeClient = btn.dataset.removeClient;
+  const editBook = btn.dataset.editBook;
+  const editClient = btn.dataset.editClient;
+
+  if (editBook) {
+    const book = getBookById(editBook);
+    if (!book) return;
+    editingBookId = editBook;
+    document.querySelector("#bookId").value = book.id;
+    document.querySelector("#bookTitle").value = book.title;
+    document.querySelector("#bookAuthor").value = book.author;
+    setBookFormMode(true);
+    notify("Editando livro.");
+    return;
+  }
+
+  if (editClient) {
+    const client = getClientById(editClient);
+    if (!client) return;
+    editingClientId = editClient;
+    document.querySelector("#clientId").value = client.id;
+    document.querySelector("#clientName").value = client.name;
+    document.querySelector("#clientCpf").value = client.cpf;
+    document.querySelector("#clientPhone").value = client.phone;
+    setClientFormMode(true);
+    notify("Editando cliente.");
+    return;
+  }
 
   if (returnBook) {
     const rental = state.rentals.find((item) => item.bookId === returnBook && !item.returnedDate);
@@ -453,12 +564,17 @@ function init() {
 
   if (els.bookForm) {
     els.bookForm.addEventListener("submit", handleBookSubmit);
+    setBookFormMode(false);
   }
   if (els.clientForm) {
     els.clientForm.addEventListener("submit", handleClientSubmit);
+    setClientFormMode(false);
   }
   if (els.rentalForm) {
     els.rentalForm.addEventListener("submit", handleRentalSubmit);
+  }
+  if (els.deleteHistoryBtn) {
+    els.deleteHistoryBtn.addEventListener("click", deleteSelectedHistory);
   }
 
   document.body.addEventListener("click", handleTableClick);
