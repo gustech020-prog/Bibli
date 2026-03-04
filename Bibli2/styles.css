@@ -38,6 +38,28 @@ body {
   margin: 0;
 }
 
+.page-nav {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem 0;
+}
+
+.nav-link {
+  text-decoration: none;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.nav-link.active {
+  color: #fff;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
 .stats {
   display: flex;
   flex-wrap: wrap;
@@ -67,11 +89,21 @@ body {
   border-color: rgba(255, 241, 243, 0.8);
 }
 
-.grid-layout {
+.grid-layout,
+.single-layout {
   display: grid;
-  grid-template-columns: repeat(2, minmax(280px, 1fr));
   gap: 1rem;
   padding: 1rem;
+}
+
+.grid-layout {
+  grid-template-columns: repeat(2, minmax(280px, 1fr));
+}
+
+.single-layout {
+  grid-template-columns: 1fr;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .panel {
@@ -83,24 +115,42 @@ body {
 }
 
 details.panel {
-  padding-top: 0.7rem;
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
 }
 
 details.panel > summary {
   list-style: none;
   cursor: pointer;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.45rem;
 }
 
 details.panel > summary::-webkit-details-marker {
   display: none;
 }
 
+details.panel > summary h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 details.panel > summary h2::after {
   content: "▾";
-  margin-left: 0.5rem;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+details.panel:not([open]) > summary {
+  margin-bottom: 0;
+}
+
+details.panel:not([open]) {
+  padding-bottom: 0.2rem;
+}
+
+details.panel:not([open]) > *:not(summary) {
+  display: none;
 }
 
 details.panel:not([open]) > summary h2::after {
@@ -122,8 +172,11 @@ h2 {
   margin-bottom: 1rem;
 }
 
-.client-grid {
-  grid-template-columns: repeat(5, minmax(100px, 1fr));
+.client-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1.1fr 1.2fr auto;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
 }
 
 .rental-grid {
@@ -150,6 +203,12 @@ button {
 
 button:hover {
   background: var(--primary-hover);
+}
+
+button:disabled,
+select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 table {
@@ -219,12 +278,17 @@ tr.overdue {
 }
 
 @media (max-width: 940px) {
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .grid-layout {
     grid-template-columns: 1fr;
   }
 
   .form-grid,
-  .client-grid,
+  .client-form-grid,
   .rental-grid {
     grid-template-columns: 1fr;
   }

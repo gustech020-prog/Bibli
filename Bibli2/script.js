@@ -1,5 +1,8 @@
 const STORAGE_KEY = "bibli-flow-data";
 const RENTAL_LIMIT_DAYS = 10;
+const CPF_DIGITS = 11;
+const PHONE_MIN_DIGITS = 10;
+const PHONE_MAX_DIGITS = 11;
 
 const state = {
   books: [],
@@ -31,9 +34,9 @@ function loadData() {
 
   try {
     const data = JSON.parse(raw);
-    state.books = data.books || [];
-    state.clients = data.clients || [];
-    state.rentals = (data.rentals || []).map((r) => ({
+    state.books = Array.isArray(data.books) ? data.books : [];
+    state.clients = Array.isArray(data.clients) ? data.clients : [];
+    state.rentals = (Array.isArray(data.rentals) ? data.rentals : []).map((r) => ({
       ...r,
       returnedDate: r.returnedDate || null,
     }));
@@ -47,6 +50,7 @@ function saveData() {
 }
 
 function notify(message) {
+  if (!els.toast) return;
   els.toast.textContent = message;
   els.toast.classList.add("show");
   setTimeout(() => els.toast.classList.remove("show"), 2400);
@@ -67,7 +71,7 @@ function addDays(dateISO, days) {
 
 function fmtDate(dateInput) {
   if (!dateInput) return "-";
-  const d = new Date(dateInput);
+  const d = new Date(dateInput + (dateInput.length === 10 ? "T00:00:00" : ""));
   return d.toLocaleDateString("pt-BR");
 }
 
@@ -76,6 +80,10 @@ function isOverdue(dueDateISO) {
   today.setHours(0, 0, 0, 0);
   const dueDate = new Date(dueDateISO + "T00:00:00");
   return dueDate < today;
+}
+
+function sanitizeDigits(value) {
+  return value.replace(/\D/g, "");
 }
 
 function activeRentals() {
@@ -95,7 +103,16 @@ function getClientById(id) {
   return state.clients.find((c) => c.id === id);
 }
 
+function ensureDataCompatibility() {
+  state.clients = state.clients.map((client) => ({
+    ...client,
+    cpf: sanitizeDigits(client.cpf || ""),
+    phone: sanitizeDigits(client.phone || ""),
+  }));
+}
+
 function updateStats() {
+  if (!els.booksCount || !els.clientsCount || !els.overdueCount || !els.overdueCard) return;
   const overdueCount = activeRentals().filter((r) => isOverdue(r.dueDate)).length;
   els.booksCount.textContent = String(state.books.length);
   els.clientsCount.textContent = String(state.clients.length);
@@ -104,22 +121,38 @@ function updateStats() {
 }
 
 function renderBookOptions() {
+  if (!els.rentalBook) return;
+  const selectedValue = els.rentalBook.value;
+  const books = availableBooks();
   const options = [
     `<option value="">Selecione um livro</option>`,
-    ...availableBooks().map((book) => `<option value="${book.id}">${book.id} • ${book.title}</option>`),
+    ...books.map((book) => `<option value="${book.id}">${book.id} • ${book.title}</option>`),
   ];
   els.rentalBook.innerHTML = options.join("");
+  els.rentalBook.disabled = books.length === 0;
+
+  if (books.some((book) => book.id === selectedValue)) {
+    els.rentalBook.value = selectedValue;
+  }
 }
 
 function renderClientOptions() {
+  if (!els.rentalClient) return;
+  const selectedValue = els.rentalClient.value;
   const options = [
     `<option value="">Selecione um cliente</option>`,
     ...state.clients.map((client) => `<option value="${client.id}">${client.id} • ${client.name}</option>`),
   ];
   els.rentalClient.innerHTML = options.join("");
+  els.rentalClient.disabled = state.clients.length === 0;
+
+  if (state.clients.some((client) => client.id === selectedValue)) {
+    els.rentalClient.value = selectedValue;
+  }
 }
 
 function renderBooks() {
+  if (!els.booksTable) return;
   if (!state.books.length) {
     els.booksTable.innerHTML = `<tr><td colspan="5">Nenhum livro cadastrado.</td></tr>`;
     return;
@@ -144,6 +177,7 @@ function renderBooks() {
 }
 
 function renderClients() {
+  if (!els.clientsTable) return;
   if (!state.clients.length) {
     els.clientsTable.innerHTML = `<tr><td colspan="5">Nenhum cliente cadastrado.</td></tr>`;
     return;
@@ -154,8 +188,8 @@ function renderClients() {
       (client) => `<tr>
       <td>${client.id}</td>
       <td>${client.name}</td>
-      <td>${client.cpf}</td>
-      <td>${client.phone}</td>
+      <td>${client.cpf || "-"}</td>
+      <td>${client.phone || "-"}</td>
       <td><button class="action-btn warn" data-remove-client="${client.id}">Excluir</button></td>
     </tr>`
     )
@@ -163,6 +197,7 @@ function renderClients() {
 }
 
 function renderActiveRentals() {
+  if (!els.activeRentalsTable) return;
   const rentals = activeRentals();
   if (!rentals.length) {
     els.activeRentalsTable.innerHTML = `<tr><td colspan="7">Nenhum aluguel ativo.</td></tr>`;
@@ -190,6 +225,7 @@ function renderActiveRentals() {
 }
 
 function renderRentalsHistory() {
+  if (!els.rentalsHistoryTable) return;
   if (!state.rentals.length) {
     els.rentalsHistoryTable.innerHTML = `<tr><td colspan="6">Nenhum histórico de aluguel.</td></tr>`;
     return;
@@ -229,11 +265,11 @@ function renderAll() {
 
 function handleBookSubmit(e) {
   e.preventDefault();
-  const id = document.querySelector("#bookId").value.trim();
+  const id = sanitizeDigits(document.querySelector("#bookId").value.trim());
   const title = document.querySelector("#bookTitle").value.trim();
   const author = document.querySelector("#bookAuthor").value.trim();
 
-  if (!/^\d+$/.test(id)) {
+  if (!id) {
     notify("ID do livro deve conter apenas números.");
     return;
   }
@@ -254,16 +290,21 @@ function handleClientSubmit(e) {
   e.preventDefault();
   const id = document.querySelector("#clientId").value.trim();
   const name = document.querySelector("#clientName").value.trim();
-  const cpf = document.querySelector("#clientCpf").value.trim();
-  const phone = document.querySelector("#clientPhone").value.trim();
+  const cpf = sanitizeDigits(document.querySelector("#clientCpf").value.trim());
+  const phone = sanitizeDigits(document.querySelector("#clientPhone").value.trim());
 
   if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test(name)) {
     notify("Nome do cliente deve conter apenas letras.");
     return;
   }
 
-  if (!/^\d+$/.test(cpf)) {
-    notify("CPF deve conter apenas números.");
+  if (cpf.length !== CPF_DIGITS) {
+    notify("CPF deve ter 11 números.");
+    return;
+  }
+
+  if (phone.length < PHONE_MIN_DIGITS || phone.length > PHONE_MAX_DIGITS) {
+    notify("Telefone deve ter 10 ou 11 números.");
     return;
   }
 
@@ -292,6 +333,27 @@ function handleRentalSubmit(e) {
 
   if (!bookId || !clientId || !startDate) {
     notify("Selecione livro, cliente e data de início.");
+    return;
+  }
+
+  const book = getBookById(bookId);
+  const client = getClientById(clientId);
+
+  if (!book) {
+    notify("Livro selecionado é inválido. Atualize a página e selecione novamente.");
+    renderBookOptions();
+    return;
+  }
+
+  if (!client) {
+    notify("Cliente selecionado é inválido. Atualize a página e selecione novamente.");
+    renderClientOptions();
+    return;
+  }
+
+  if (activeRentals().some((rental) => rental.bookId === bookId)) {
+    notify("Este livro já está alugado.");
+    renderBookOptions();
     return;
   }
 
@@ -342,14 +404,39 @@ function handleTableClick(e) {
   renderAll();
 }
 
+function bindNumericInput(selector, maxLength) {
+  const input = document.querySelector(selector);
+  if (!input) return;
+
+  input.addEventListener("input", () => {
+    const digitsOnly = sanitizeDigits(input.value);
+    input.value = maxLength ? digitsOnly.slice(0, maxLength) : digitsOnly;
+  });
+}
+
 function init() {
   loadData();
-  els.rentalStart.value = todayISO();
+  ensureDataCompatibility();
+  saveData();
 
-  els.bookForm.addEventListener("submit", handleBookSubmit);
-  els.clientForm.addEventListener("submit", handleClientSubmit);
-  els.rentalForm.addEventListener("submit", handleRentalSubmit);
+  if (els.rentalStart) {
+    els.rentalStart.value = todayISO();
+  }
+
+  if (els.bookForm) {
+    els.bookForm.addEventListener("submit", handleBookSubmit);
+  }
+  if (els.clientForm) {
+    els.clientForm.addEventListener("submit", handleClientSubmit);
+  }
+  if (els.rentalForm) {
+    els.rentalForm.addEventListener("submit", handleRentalSubmit);
+  }
+
   document.body.addEventListener("click", handleTableClick);
+  bindNumericInput("#bookId");
+  bindNumericInput("#clientCpf", CPF_DIGITS);
+  bindNumericInput("#clientPhone", PHONE_MAX_DIGITS);
 
   renderAll();
 }
