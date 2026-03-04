@@ -121,7 +121,11 @@ if (!is_array($payload)) {
     $payload = [];
 }
 
-$pdo = db();
+try {
+    $pdo = db();
+} catch (Throwable $e) {
+    respond(['ok' => false, 'message' => 'Falha ao inicializar banco SQL (SQLite/PDO).'], 500);
+}
 
 if ($method === 'GET' && $action === 'state') {
     respond(['ok' => true, 'state' => getState($pdo)]);

@@ -470,6 +470,12 @@ tr.overdue {
   gap: 0.5rem;
 }
 
+.modal-actions button {
+  width: auto;
+  padding: 0.36rem 0.7rem;
+  font-size: 0.8rem;
+}
+
 .modal-grid-client .modal-actions,
 .modal-grid .modal-actions {
   grid-column: 1 / -1;

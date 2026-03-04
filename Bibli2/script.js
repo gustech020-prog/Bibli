@@ -57,7 +57,15 @@ async function api(action, payload = {}, method = "POST") {
     headers: { "Content-Type": "application/json" },
     body: method === "POST" ? JSON.stringify(payload) : undefined,
   });
-  const data = await res.json();
+
+  const raw = await res.text();
+  let data;
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch (_err) {
+    throw new Error("Servidor indisponível. Inicie com: php -S 0.0.0.0:8000");
+  }
+
   if (!res.ok || data.ok === false) {
     throw new Error(data.message || "Falha na comunicação com servidor.");
   }
@@ -486,7 +494,7 @@ async function init() {
   try {
     await refreshAndRender();
   } catch (err) {
-    notify("Não foi possível carregar dados do servidor.");
+    notify(err.message || "Não foi possível carregar dados do servidor.");
   }
 }
 
