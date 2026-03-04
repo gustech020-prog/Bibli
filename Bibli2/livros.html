@@ -10,6 +10,13 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function () {
+        var theme = localStorage.getItem("bibli-flow-theme") === "dark" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.style.backgroundColor = theme === "dark" ? "#101010" : "#f3f3f3";
+      })();
+    </script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -26,7 +33,7 @@
         <h1>BibliFlow</h1>
       </div>
       <div class="header-actions">
-        <button type="button" id="themeToggle" class="theme-toggle" aria-label="Alternar tema">
+        <button type="button" id="themeToggle" class="theme-toggle" aria-label="Ativar modo escuro">
           <span class="theme-icon" aria-hidden="true"></span>
         </button>
         <div class="stats">
@@ -47,9 +54,9 @@
     </header>
 
     <nav class="page-nav">
+      <a class="nav-link" href="index.html">Empréstimos</a>
       <a class="nav-link active" href="livros.html">Livros</a>
       <a class="nav-link" href="clientes.html">Clientes</a>
-      <a class="nav-link" href="index.html">Aluguéis</a>
     </nav>
 
     <main class="single-layout">

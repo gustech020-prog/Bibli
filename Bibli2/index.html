@@ -3,13 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BibliFlow | Aluguéis</title>
+    <title>BibliFlow | Empréstimos</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <script>
+      (function () {
+        var theme = localStorage.getItem("bibli-flow-theme") === "dark" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.style.backgroundColor = theme === "dark" ? "#101010" : "#f3f3f3";
+      })();
+    </script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -26,7 +33,7 @@
         <h1>BibliFlow</h1>
       </div>
       <div class="header-actions">
-        <button type="button" id="themeToggle" class="theme-toggle" aria-label="Alternar tema">
+        <button type="button" id="themeToggle" class="theme-toggle" aria-label="Ativar modo escuro">
           <span class="theme-icon" aria-hidden="true"></span>
         </button>
         <div class="stats">
@@ -47,14 +54,14 @@
     </header>
 
     <nav class="page-nav">
+      <a class="nav-link active" href="index.html">Empréstimos</a>
       <a class="nav-link" href="livros.html">Livros</a>
       <a class="nav-link" href="clientes.html">Clientes</a>
-      <a class="nav-link active" href="index.html">Aluguéis</a>
     </nav>
 
     <main class="single-layout">
       <section class="panel panel-wide">
-        <h2>Gerenciar Aluguéis</h2>
+        <h2>Gerenciar Empréstimos</h2>
         <form id="rentalForm" class="form-grid rental-grid">
           <select id="rentalBook" required>
             <option value="">Selecione um livro</option>
@@ -63,7 +70,7 @@
             <option value="">Selecione um cliente</option>
           </select>
           <input type="date" id="rentalStart" required />
-          <button type="submit">Registrar Aluguel (10 dias)</button>
+          <button type="submit">Registrar Empréstimo (10 dias)</button>
         </form>
 
         <table>
@@ -83,7 +90,7 @@
       </section>
 
       <details class="panel panel-wide" open>
-        <summary><h2>Histórico de Aluguéis</h2></summary>
+        <summary><h2>Histórico de Empréstimos</h2></summary>
         <table>
           <thead>
             <tr>

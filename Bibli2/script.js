@@ -63,7 +63,9 @@ function applyTheme(theme) {
   if (els.themeToggle) {
     els.themeToggle.setAttribute("aria-label", theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro");
   }
+  document.documentElement.style.backgroundColor = "";
 }
+
 
 function initTheme() {
   const savedTheme = localStorage.getItem(THEME_KEY);
@@ -191,7 +193,7 @@ function renderBooks() {
         <td>${book.title}</td>
         <td>${book.author}</td>
         <td><span class="status ${busy ? "status-danger" : "status-ok"}">${
-        busy ? "Alugado" : "Disponível"
+        busy ? "Emprestado" : "Disponível"
       }</span></td>
         <td><button class="action-btn warn" data-remove-book="${book.id}">Excluir</button></td>
       </tr>`;
@@ -223,7 +225,7 @@ function renderActiveRentals() {
   if (!els.activeRentalsTable) return;
   const rentals = activeRentals();
   if (!rentals.length) {
-    els.activeRentalsTable.innerHTML = `<tr><td colspan="7">Nenhum aluguel ativo.</td></tr>`;
+    els.activeRentalsTable.innerHTML = `<tr><td colspan="7">Nenhum empréstimo ativo.</td></tr>`;
     return;
   }
 
@@ -250,7 +252,7 @@ function renderActiveRentals() {
 function renderRentalsHistory() {
   if (!els.rentalsHistoryTable) return;
   if (!state.rentals.length) {
-    els.rentalsHistoryTable.innerHTML = `<tr><td colspan="6">Nenhum histórico de aluguel.</td></tr>`;
+    els.rentalsHistoryTable.innerHTML = `<tr><td colspan="6">Nenhum histórico de empréstimo.</td></tr>`;
     return;
   }
 
@@ -375,7 +377,7 @@ function handleRentalSubmit(e) {
   }
 
   if (activeRentals().some((rental) => rental.bookId === bookId)) {
-    notify("Este livro já está alugado.");
+    notify("Este livro já está emprestado.");
     renderBookOptions();
     return;
   }
@@ -388,7 +390,7 @@ function handleRentalSubmit(e) {
   if (els.rentalStart) {
     els.rentalStart.value = todayISO();
   }
-  notify("Aluguel registrado por 10 dias.");
+  notify("Empréstimo registrado por 10 dias.");
 }
 
 function handleTableClick(e) {
@@ -409,7 +411,7 @@ function handleTableClick(e) {
 
   if (removeBook) {
     if (activeRentals().some((r) => r.bookId === removeBook)) {
-      notify("Não é possível excluir um livro alugado.");
+      notify("Não é possível excluir um livro emprestado.");
       return;
     }
     state.books = state.books.filter((book) => book.id !== removeBook);
@@ -418,7 +420,7 @@ function handleTableClick(e) {
 
   if (removeClient) {
     if (activeRentals().some((r) => r.clientId === removeClient)) {
-      notify("Não é possível excluir cliente com aluguel ativo.");
+      notify("Não é possível excluir cliente com empréstimo ativo.");
       return;
     }
     state.clients = state.clients.filter((client) => client.id !== removeClient);
