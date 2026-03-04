@@ -1,4 +1,5 @@
 const STORAGE_KEY = "bibli-flow-data";
+const THEME_KEY = "bibli-flow-theme";
 const RENTAL_LIMIT_DAYS = 10;
 const CPF_DIGITS = 11;
 const PHONE_MIN_DIGITS = 10;
@@ -26,6 +27,7 @@ const els = {
   overdueCount: document.querySelector("#overdueCount"),
   overdueCard: document.querySelector("#overdueCard"),
   toast: document.querySelector("#toast"),
+  themeToggle: document.querySelector("#themeToggle"),
 };
 
 function loadData() {
@@ -54,6 +56,27 @@ function notify(message) {
   els.toast.textContent = message;
   els.toast.classList.add("show");
   setTimeout(() => els.toast.classList.remove("show"), 2400);
+}
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  if (els.themeToggle) {
+    els.themeToggle.textContent = theme === "dark" ? "Modo claro" : "Modo escuro";
+  }
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  const theme = savedTheme === "dark" ? "dark" : "light";
+  applyTheme(theme);
+
+  if (!els.themeToggle) return;
+  els.themeToggle.addEventListener("click", () => {
+    const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+    const nextTheme = currentTheme === "light" ? "dark" : "light";
+    localStorage.setItem(THEME_KEY, nextTheme);
+    applyTheme(nextTheme);
+  });
 }
 
 function todayISO() {
@@ -265,9 +288,9 @@ function renderAll() {
 
 function handleBookSubmit(e) {
   e.preventDefault();
-  const id = sanitizeDigits(document.querySelector("#bookId").value.trim());
-  const title = document.querySelector("#bookTitle").value.trim();
-  const author = document.querySelector("#bookAuthor").value.trim();
+  const id = sanitizeDigits(document.querySelector("#bookId")?.value.trim() || "");
+  const title = document.querySelector("#bookTitle")?.value.trim() || "";
+  const author = document.querySelector("#bookAuthor")?.value.trim() || "";
 
   if (!id) {
     notify("ID do livro deve conter apenas números.");
@@ -288,10 +311,10 @@ function handleBookSubmit(e) {
 
 function handleClientSubmit(e) {
   e.preventDefault();
-  const id = document.querySelector("#clientId").value.trim();
-  const name = document.querySelector("#clientName").value.trim();
-  const cpf = sanitizeDigits(document.querySelector("#clientCpf").value.trim());
-  const phone = sanitizeDigits(document.querySelector("#clientPhone").value.trim());
+  const id = document.querySelector("#clientId")?.value.trim() || "";
+  const name = document.querySelector("#clientName")?.value.trim() || "";
+  const cpf = sanitizeDigits(document.querySelector("#clientCpf")?.value.trim() || "");
+  const phone = sanitizeDigits(document.querySelector("#clientPhone")?.value.trim() || "");
 
   if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test(name)) {
     notify("Nome do cliente deve conter apenas letras.");
@@ -327,9 +350,9 @@ function handleClientSubmit(e) {
 
 function handleRentalSubmit(e) {
   e.preventDefault();
-  const bookId = els.rentalBook.value;
-  const clientId = els.rentalClient.value;
-  const startDate = els.rentalStart.value;
+  const bookId = els.rentalBook?.value;
+  const clientId = els.rentalClient?.value;
+  const startDate = els.rentalStart?.value;
 
   if (!bookId || !clientId || !startDate) {
     notify("Selecione livro, cliente e data de início.");
@@ -362,7 +385,9 @@ function handleRentalSubmit(e) {
   saveData();
   renderAll();
   e.target.reset();
-  els.rentalStart.value = todayISO();
+  if (els.rentalStart) {
+    els.rentalStart.value = todayISO();
+  }
   notify("Aluguel registrado por 10 dias.");
 }
 
@@ -415,6 +440,7 @@ function bindNumericInput(selector, maxLength) {
 }
 
 function init() {
+  initTheme();
   loadData();
   ensureDataCompatibility();
   saveData();
