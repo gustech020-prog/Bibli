@@ -16,7 +16,6 @@
     <header class="topbar">
       <div>
         <h1>📚 BibliFlow</h1>
-        <p>Sistema web de gerenciamento de biblioteca</p>
       </div>
       <div class="stats">
         <div class="stat-card">
@@ -35,10 +34,10 @@
     </header>
 
     <main class="grid-layout">
-      <section class="panel">
-        <h2>Adicionar Livro</h2>
+      <details class="panel" open>
+        <summary><h2>Livros</h2></summary>
         <form id="bookForm" class="form-grid">
-          <input type="text" id="bookId" placeholder="ID do livro" required />
+          <input type="text" id="bookId" placeholder="ID do livro" inputmode="numeric" required />
           <input type="text" id="bookTitle" placeholder="Título" required />
           <input type="text" id="bookAuthor" placeholder="Autor" required />
           <button type="submit">Salvar Livro</button>
@@ -56,14 +55,15 @@
           </thead>
           <tbody id="booksTable"></tbody>
         </table>
-      </section>
+      </details>
 
-      <section class="panel">
-        <h2>Adicionar Cliente</h2>
-        <form id="clientForm" class="form-grid">
+      <details class="panel" open>
+        <summary><h2>Clientes</h2></summary>
+        <form id="clientForm" class="form-grid client-grid">
           <input type="text" id="clientId" placeholder="ID do cliente" required />
           <input type="text" id="clientName" placeholder="Nome" required />
-          <input type="email" id="clientEmail" placeholder="E-mail" required />
+          <input type="text" id="clientCpf" placeholder="CPF" inputmode="numeric" required />
+          <input type="tel" id="clientPhone" placeholder="Telefone" required />
           <button type="submit">Salvar Cliente</button>
         </form>
 
@@ -72,13 +72,14 @@
             <tr>
               <th>ID</th>
               <th>Nome</th>
-              <th>E-mail</th>
+              <th>CPF</th>
+              <th>Telefone</th>
               <th></th>
             </tr>
           </thead>
           <tbody id="clientsTable"></tbody>
         </table>
-      </section>
+      </details>
 
       <section class="panel panel-wide">
         <h2>Gerenciar Aluguéis</h2>
@@ -100,13 +101,31 @@
               <th>Cliente</th>
               <th>Início</th>
               <th>Vencimento</th>
+              <th>Devolução</th>
               <th>Status</th>
               <th></th>
             </tr>
           </thead>
-          <tbody id="rentalsTable"></tbody>
+          <tbody id="activeRentalsTable"></tbody>
         </table>
       </section>
+
+      <details class="panel panel-wide" open>
+        <summary><h2>Histórico de Aluguéis</h2></summary>
+        <table>
+          <thead>
+            <tr>
+              <th>Livro</th>
+              <th>Cliente</th>
+              <th>Início</th>
+              <th>Vencimento</th>
+              <th>Devolução</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="rentalsHistoryTable"></tbody>
+        </table>
+      </details>
     </main>
 
     <div id="toast" class="toast" aria-live="polite"></div>

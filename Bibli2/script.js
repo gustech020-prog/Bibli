@@ -13,7 +13,8 @@ const els = {
   rentalForm: document.querySelector("#rentalForm"),
   booksTable: document.querySelector("#booksTable"),
   clientsTable: document.querySelector("#clientsTable"),
-  rentalsTable: document.querySelector("#rentalsTable"),
+  activeRentalsTable: document.querySelector("#activeRentalsTable"),
+  rentalsHistoryTable: document.querySelector("#rentalsHistoryTable"),
   rentalBook: document.querySelector("#rentalBook"),
   rentalClient: document.querySelector("#rentalClient"),
   rentalStart: document.querySelector("#rentalStart"),
@@ -32,7 +33,10 @@ function loadData() {
     const data = JSON.parse(raw);
     state.books = data.books || [];
     state.clients = data.clients || [];
-    state.rentals = data.rentals || [];
+    state.rentals = (data.rentals || []).map((r) => ({
+      ...r,
+      returnedDate: r.returnedDate || null,
+    }));
   } catch {
     notify("Dados locais inválidos. Reiniciando sistema.");
   }
@@ -62,6 +66,7 @@ function addDays(dateISO, days) {
 }
 
 function fmtDate(dateInput) {
+  if (!dateInput) return "-";
   const d = new Date(dateInput);
   return d.toLocaleDateString("pt-BR");
 }
@@ -73,8 +78,12 @@ function isOverdue(dueDateISO) {
   return dueDate < today;
 }
 
+function activeRentals() {
+  return state.rentals.filter((r) => !r.returnedDate);
+}
+
 function availableBooks() {
-  const rentedBookIds = new Set(state.rentals.map((r) => r.bookId));
+  const rentedBookIds = new Set(activeRentals().map((r) => r.bookId));
   return state.books.filter((book) => !rentedBookIds.has(book.id));
 }
 
@@ -87,7 +96,7 @@ function getClientById(id) {
 }
 
 function updateStats() {
-  const overdueCount = state.rentals.filter((r) => isOverdue(r.dueDate)).length;
+  const overdueCount = activeRentals().filter((r) => isOverdue(r.dueDate)).length;
   els.booksCount.textContent = String(state.books.length);
   els.clientsCount.textContent = String(state.clients.length);
   els.overdueCount.textContent = String(overdueCount);
@@ -116,7 +125,7 @@ function renderBooks() {
     return;
   }
 
-  const rentedIds = new Set(state.rentals.map((r) => r.bookId));
+  const rentedIds = new Set(activeRentals().map((r) => r.bookId));
 
   els.booksTable.innerHTML = state.books
     .map((book) => {
@@ -136,7 +145,7 @@ function renderBooks() {
 
 function renderClients() {
   if (!state.clients.length) {
-    els.clientsTable.innerHTML = `<tr><td colspan="4">Nenhum cliente cadastrado.</td></tr>`;
+    els.clientsTable.innerHTML = `<tr><td colspan="5">Nenhum cliente cadastrado.</td></tr>`;
     return;
   }
 
@@ -145,20 +154,22 @@ function renderClients() {
       (client) => `<tr>
       <td>${client.id}</td>
       <td>${client.name}</td>
-      <td>${client.email}</td>
+      <td>${client.cpf}</td>
+      <td>${client.phone}</td>
       <td><button class="action-btn warn" data-remove-client="${client.id}">Excluir</button></td>
     </tr>`
     )
     .join("");
 }
 
-function renderRentals() {
-  if (!state.rentals.length) {
-    els.rentalsTable.innerHTML = `<tr><td colspan="6">Nenhum aluguel ativo.</td></tr>`;
+function renderActiveRentals() {
+  const rentals = activeRentals();
+  if (!rentals.length) {
+    els.activeRentalsTable.innerHTML = `<tr><td colspan="7">Nenhum aluguel ativo.</td></tr>`;
     return;
   }
 
-  els.rentalsTable.innerHTML = state.rentals
+  els.activeRentalsTable.innerHTML = rentals
     .map((rental) => {
       const overdue = isOverdue(rental.dueDate);
       const book = getBookById(rental.bookId);
@@ -168,6 +179,7 @@ function renderRentals() {
       <td>${client ? client.name : rental.clientId}</td>
       <td>${fmtDate(rental.startDate)}</td>
       <td>${fmtDate(rental.dueDate)}</td>
+      <td>-</td>
       <td><span class="status ${overdue ? "status-danger" : "status-ok"}">${
         overdue ? "Atrasado" : "No prazo"
       }</span></td>
@@ -177,10 +189,39 @@ function renderRentals() {
     .join("");
 }
 
+function renderRentalsHistory() {
+  if (!state.rentals.length) {
+    els.rentalsHistoryTable.innerHTML = `<tr><td colspan="6">Nenhum histórico de aluguel.</td></tr>`;
+    return;
+  }
+
+  els.rentalsHistoryTable.innerHTML = state.rentals
+    .map((rental) => {
+      const book = getBookById(rental.bookId);
+      const client = getClientById(rental.clientId);
+      const status = rental.returnedDate
+        ? `<span class="status status-ok">Devolvido</span>`
+        : `<span class="status ${isOverdue(rental.dueDate) ? "status-danger" : "status-ok"}">${
+            isOverdue(rental.dueDate) ? "Atrasado" : "Ativo"
+          }</span>`;
+
+      return `<tr>
+      <td>${book ? book.title : rental.bookId}</td>
+      <td>${client ? client.name : rental.clientId}</td>
+      <td>${fmtDate(rental.startDate)}</td>
+      <td>${fmtDate(rental.dueDate)}</td>
+      <td>${fmtDate(rental.returnedDate)}</td>
+      <td>${status}</td>
+    </tr>`;
+    })
+    .join("");
+}
+
 function renderAll() {
   renderBooks();
   renderClients();
-  renderRentals();
+  renderActiveRentals();
+  renderRentalsHistory();
   renderBookOptions();
   renderClientOptions();
   updateStats();
@@ -191,6 +232,11 @@ function handleBookSubmit(e) {
   const id = document.querySelector("#bookId").value.trim();
   const title = document.querySelector("#bookTitle").value.trim();
   const author = document.querySelector("#bookAuthor").value.trim();
+
+  if (!/^\d+$/.test(id)) {
+    notify("ID do livro deve conter apenas números.");
+    return;
+  }
 
   if (state.books.some((book) => book.id === id)) {
     notify("Já existe um livro com este ID.");
@@ -208,14 +254,30 @@ function handleClientSubmit(e) {
   e.preventDefault();
   const id = document.querySelector("#clientId").value.trim();
   const name = document.querySelector("#clientName").value.trim();
-  const email = document.querySelector("#clientEmail").value.trim();
+  const cpf = document.querySelector("#clientCpf").value.trim();
+  const phone = document.querySelector("#clientPhone").value.trim();
+
+  if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test(name)) {
+    notify("Nome do cliente deve conter apenas letras.");
+    return;
+  }
+
+  if (!/^\d+$/.test(cpf)) {
+    notify("CPF deve conter apenas números.");
+    return;
+  }
 
   if (state.clients.some((client) => client.id === id)) {
     notify("Já existe um cliente com este ID.");
     return;
   }
 
-  state.clients.push({ id, name, email });
+  if (state.clients.some((client) => client.cpf === cpf)) {
+    notify("Já existe um cliente com este CPF.");
+    return;
+  }
+
+  state.clients.push({ id, name, cpf, phone });
   saveData();
   renderAll();
   e.target.reset();
@@ -234,7 +296,7 @@ function handleRentalSubmit(e) {
   }
 
   const dueDate = addDays(startDate, RENTAL_LIMIT_DAYS).toISOString().slice(0, 10);
-  state.rentals.push({ bookId, clientId, startDate, dueDate });
+  state.rentals.push({ bookId, clientId, startDate, dueDate, returnedDate: null });
   saveData();
   renderAll();
   e.target.reset();
@@ -251,12 +313,15 @@ function handleTableClick(e) {
   const removeClient = btn.dataset.removeClient;
 
   if (returnBook) {
-    state.rentals = state.rentals.filter((rental) => rental.bookId !== returnBook);
-    notify("Livro devolvido e liberado.");
+    const rental = state.rentals.find((item) => item.bookId === returnBook && !item.returnedDate);
+    if (rental) {
+      rental.returnedDate = todayISO();
+      notify("Livro devolvido e registrado no histórico.");
+    }
   }
 
   if (removeBook) {
-    if (state.rentals.some((r) => r.bookId === removeBook)) {
+    if (activeRentals().some((r) => r.bookId === removeBook)) {
       notify("Não é possível excluir um livro alugado.");
       return;
     }
@@ -265,7 +330,7 @@ function handleTableClick(e) {
   }
 
   if (removeClient) {
-    if (state.rentals.some((r) => r.clientId === removeClient)) {
+    if (activeRentals().some((r) => r.clientId === removeClient)) {
       notify("Não é possível excluir cliente com aluguel ativo.");
       return;
     }

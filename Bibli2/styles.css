@@ -38,11 +38,6 @@ body {
   margin: 0;
 }
 
-.topbar p {
-  margin: 0.3rem 0 0;
-  opacity: 0.9;
-}
-
 .stats {
   display: flex;
   flex-wrap: wrap;
@@ -87,12 +82,37 @@ body {
   padding: 1rem;
 }
 
+details.panel {
+  padding-top: 0.7rem;
+}
+
+details.panel > summary {
+  list-style: none;
+  cursor: pointer;
+  margin-bottom: 0.8rem;
+}
+
+details.panel > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.panel > summary h2::after {
+  content: "▾";
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+details.panel:not([open]) > summary h2::after {
+  content: "▸";
+}
+
 .panel-wide {
   grid-column: 1 / -1;
 }
 
 h2 {
-  margin: 0 0 1rem;
+  margin: 0;
 }
 
 .form-grid {
@@ -100,6 +120,10 @@ h2 {
   grid-template-columns: repeat(4, minmax(100px, 1fr));
   gap: 0.6rem;
   margin-bottom: 1rem;
+}
+
+.client-grid {
+  grid-template-columns: repeat(5, minmax(100px, 1fr));
 }
 
 .rental-grid {
@@ -200,6 +224,7 @@ tr.overdue {
   }
 
   .form-grid,
+  .client-grid,
   .rental-grid {
     grid-template-columns: 1fr;
   }
