@@ -63,7 +63,6 @@
       <section class="panel panel-wide">
         <div class="panel-title-row">
           <h2>Gerenciar Empréstimos</h2>
-          <button type="button" id="deleteHistoryBtn" class="action-btn warn">Apagar selecionados</button>
         </div>
         <form id="rentalForm" class="form-grid rental-grid">
           <select id="rentalBook" required>
@@ -93,7 +92,12 @@
       </section>
 
       <details class="panel panel-wide" open>
-        <summary><h2>Histórico de Empréstimos</h2></summary>
+        <summary>
+          <div class="panel-title-row">
+            <h2>Histórico de Empréstimos</h2>
+            <button type="button" id="deleteHistoryBtn" class="action-btn warn compact">🗑 Apagar selecionados</button>
+          </div>
+        </summary>
         <table>
           <thead>
             <tr>

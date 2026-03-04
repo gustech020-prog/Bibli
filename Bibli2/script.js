@@ -198,9 +198,9 @@ function renderBooks() {
         <td><span class="status ${busy ? "status-danger" : "status-ok"}">${
         busy ? "Emprestado" : "Disponível"
       }</span></td>
-        <td>
-          <button class="action-btn" data-edit-book="${book.id}">Editar</button>
-          <button class="action-btn warn" data-remove-book="${book.id}">Excluir</button>
+        <td class="row-actions">
+          <button type="button" class="action-btn icon-btn" title="Editar livro" aria-label="Editar livro" data-edit-book="${book.id}">✏️</button>
+          <button type="button" class="action-btn warn icon-btn" title="Excluir livro" aria-label="Excluir livro" data-remove-book="${book.id}">🗑</button>
         </td>
       </tr>`;
     })
@@ -221,9 +221,9 @@ function renderClients() {
       <td>${client.name}</td>
       <td>${client.cpf || "-"}</td>
       <td>${client.phone || "-"}</td>
-      <td>
-        <button class="action-btn" data-edit-client="${client.id}">Editar</button>
-        <button class="action-btn warn" data-remove-client="${client.id}">Excluir</button>
+      <td class="row-actions">
+        <button type="button" class="action-btn icon-btn" title="Editar cliente" aria-label="Editar cliente" data-edit-client="${client.id}">✏️</button>
+        <button type="button" class="action-btn warn icon-btn" title="Excluir cliente" aria-label="Excluir cliente" data-remove-client="${client.id}">🗑</button>
       </td>
     </tr>`
     )
@@ -252,7 +252,7 @@ function renderActiveRentals() {
       <td><span class="status ${overdue ? "status-danger" : "status-ok"}">${
         overdue ? "Atrasado" : "No prazo"
       }</span></td>
-      <td><button class="action-btn" data-return-book="${rental.bookId}">Dar baixa</button></td>
+      <td><button type="button" class="action-btn" data-return-book="${rental.bookId}">Dar baixa</button></td>
     </tr>`;
     })
     .join("");
