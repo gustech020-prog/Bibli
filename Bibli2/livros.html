@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BibliFlow | Aluguéis</title>
+    <title>BibliFlow | Livros</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -47,57 +47,34 @@
     </header>
 
     <nav class="page-nav">
-      <a class="nav-link" href="livros.html">Livros</a>
+      <a class="nav-link active" href="livros.html">Livros</a>
       <a class="nav-link" href="clientes.html">Clientes</a>
-      <a class="nav-link active" href="index.html">Aluguéis</a>
+      <a class="nav-link" href="index.html">Aluguéis</a>
     </nav>
 
     <main class="single-layout">
       <section class="panel panel-wide">
-        <h2>Gerenciar Aluguéis</h2>
-        <form id="rentalForm" class="form-grid rental-grid">
-          <select id="rentalBook" required>
-            <option value="">Selecione um livro</option>
-          </select>
-          <select id="rentalClient" required>
-            <option value="">Selecione um cliente</option>
-          </select>
-          <input type="date" id="rentalStart" required />
-          <button type="submit">Registrar Aluguel (10 dias)</button>
+        <h2>Livros</h2>
+        <form id="bookForm" class="form-grid">
+          <input type="text" id="bookId" placeholder="ID do livro" inputmode="numeric" required />
+          <input type="text" id="bookTitle" placeholder="Título" required />
+          <input type="text" id="bookAuthor" placeholder="Autor" required />
+          <button type="submit">Salvar Livro</button>
         </form>
 
         <table>
           <thead>
             <tr>
-              <th>Livro</th>
-              <th>Cliente</th>
-              <th>Início</th>
-              <th>Vencimento</th>
-              <th>Devolução</th>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Autor</th>
               <th>Status</th>
               <th></th>
             </tr>
           </thead>
-          <tbody id="activeRentalsTable"></tbody>
+          <tbody id="booksTable"></tbody>
         </table>
       </section>
-
-      <details class="panel panel-wide" open>
-        <summary><h2>Histórico de Aluguéis</h2></summary>
-        <table>
-          <thead>
-            <tr>
-              <th>Livro</th>
-              <th>Cliente</th>
-              <th>Início</th>
-              <th>Vencimento</th>
-              <th>Devolução</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="rentalsHistoryTable"></tbody>
-        </table>
-      </details>
     </main>
 
     <div id="toast" class="toast" aria-live="polite"></div>

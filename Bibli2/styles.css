@@ -9,6 +9,10 @@
   --danger-bg: #ffe8eb;
   --ok: #136b39;
   --ok-bg: #e7f7ee;
+  --status-ok-text: #0f6b3a;
+  --status-ok-bg: #dcf6e8;
+  --status-danger-text: #a41d2a;
+  --status-danger-bg: #ffe1e5;
   --border: #d9d9d9;
   --header-bg: #0e0e0e;
   --header-text: #ffffff;
@@ -25,6 +29,10 @@
   --danger-bg: #3a1d22;
   --ok: #76e8a6;
   --ok-bg: #173325;
+  --status-ok-text: #8ef2ba;
+  --status-ok-bg: #1f3c2d;
+  --status-danger-text: #ff9daa;
+  --status-danger-bg: #45232a;
   --border: #383838;
   --header-bg: #f5f5f5;
   --header-text: #121212;
@@ -92,6 +100,24 @@ body {
 
 .theme-toggle:hover {
   background: color-mix(in oklab, var(--header-text) 10%, transparent);
+}
+
+.theme-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+:root[data-theme="light"] .theme-icon::before {
+  content: "🌙";
+}
+
+:root[data-theme="dark"] .theme-icon::before {
+  content: "☀️";
 }
 
 .page-nav {
@@ -290,13 +316,13 @@ td {
 }
 
 .status-ok {
-  color: var(--ok);
-  background: var(--ok-bg);
+  color: var(--status-ok-text);
+  background: var(--status-ok-bg);
 }
 
 .status-danger {
-  color: var(--danger);
-  background: var(--danger-bg);
+  color: var(--status-danger-text);
+  background: var(--status-danger-bg);
 }
 
 tr.overdue {

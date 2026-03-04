@@ -61,7 +61,7 @@ function notify(message) {
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   if (els.themeToggle) {
-    els.themeToggle.textContent = theme === "dark" ? "Modo claro" : "Modo escuro";
+    els.themeToggle.setAttribute("aria-label", theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro");
   }
 }
 
