@@ -87,10 +87,10 @@ function db(): PDO
         )'
     );
 
-    ensureColumn($pdo, 'books', 'location', "TEXT NOT NULL DEFAULT \'\'");
-    ensureColumn($pdo, 'books', 'genre', "TEXT NOT NULL DEFAULT \'\'");
-    ensureColumn($pdo, 'books', 'publisher', "TEXT NOT NULL DEFAULT \'\'");
-    ensureColumn($pdo, 'clients', 'address', "TEXT NOT NULL DEFAULT \'\'");
+    ensureColumn($pdo, 'books', 'location', "TEXT NOT NULL DEFAULT ''");
+    ensureColumn($pdo, 'books', 'genre', "TEXT NOT NULL DEFAULT ''");
+    ensureColumn($pdo, 'books', 'publisher', "TEXT NOT NULL DEFAULT ''");
+    ensureColumn($pdo, 'clients', 'address', "TEXT NOT NULL DEFAULT ''");
 
     return $pdo;
 }
