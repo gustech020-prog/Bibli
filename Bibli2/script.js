@@ -260,18 +260,10 @@ function renderClients() {
 
 function renderActiveRentals() {
   if (!els.activeRentalsTable) return;
-  const query = getSearchValue(els.rentalsSearch);
-  const rentals = activeRentals().filter((rental) => {
-    const book = getBookById(rental.bookId);
-    const client = getClientById(rental.clientId);
-    const overdue = isOverdue(rental.dueDate);
-    const text = `${book?.id || rental.bookId} ${book?.title || ""} ${book?.author || ""} ${book?.location || ""} ${book?.genre || ""} ${book?.publisher || ""} ${client?.id || rental.clientId} ${client?.name || ""} ${client?.cpf || ""} ${client?.phone || ""} ${client?.address || ""} ${fmtDate(rental.startDate)} ${fmtDate(rental.dueDate)} ${overdue ? "atrasado" : "no prazo"} ativo`;
-    return includesQuery(text, query);
-  });
+  const rentals = activeRentals();
 
   if (!rentals.length) {
-    const emptyMsg = activeRentals().length ? "Nenhum empréstimo ativo encontrado." : "Nenhum empréstimo ativo.";
-    els.activeRentalsTable.innerHTML = `<tr><td colspan="7">${emptyMsg}</td></tr>`;
+    els.activeRentalsTable.innerHTML = `<tr><td colspan="7">Nenhum empréstimo ativo.</td></tr>`;
     return;
   }
 

@@ -63,7 +63,6 @@
       <section class="panel panel-wide">
         <div class="panel-title-row">
           <h2>Gerenciar Empréstimos</h2>
-          <input type="search" id="rentalsSearch" class="panel-search" placeholder="Buscar empréstimo por qualquer informação" />
         </div>
         <form id="rentalForm" class="form-grid rental-grid">
           <select id="rentalBook" required>
@@ -77,7 +76,7 @@
         </form>
 
         <div class="table-wrap">
-        <table>
+        <table class="rentals-table">
           <thead>
             <tr>
               <th>Livro</th>
@@ -98,11 +97,17 @@
         <summary>
           <div class="panel-title-row">
             <h2>Histórico de Empréstimos</h2>
-            <button type="button" id="deleteHistoryBtn" class="action-btn warn compact">🗑 Apagar selecionados</button>
+            <div class="history-tools">
+              <label class="search-with-icon compact-search" aria-label="Buscar no histórico de empréstimos">
+                <span class="search-icon" aria-hidden="true">🔍</span>
+                <input type="search" id="rentalsSearch" class="panel-search" placeholder="Buscar no histórico" />
+              </label>
+              <button type="button" id="deleteHistoryBtn" class="action-btn warn compact">🗑 Apagar selecionados</button>
+            </div>
           </div>
         </summary>
         <div class="table-wrap">
-        <table>
+        <table class="history-table">
           <thead>
             <tr>
               <th></th>

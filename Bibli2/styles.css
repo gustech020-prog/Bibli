@@ -268,6 +268,43 @@ h2 {
   width: min(420px, 100%);
 }
 
+.history-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-left: auto;
+}
+
+.compact-search {
+  width: min(280px, 100%);
+}
+
+.search-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.34rem 0.58rem;
+  background: var(--panel);
+}
+
+.search-icon {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.search-with-icon input {
+  border: none;
+  padding: 0;
+  min-width: 0;
+  background: transparent;
+}
+
+.search-with-icon input:focus {
+  outline: none;
+}
+
 .table-tools {
   margin-bottom: 0.7rem;
 }
@@ -341,6 +378,7 @@ table {
   width: 100%;
   min-width: 840px;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 th,
@@ -349,6 +387,44 @@ td {
   border-bottom: 1px solid var(--border);
   text-align: left;
   font-size: 0.92rem;
+  vertical-align: middle;
+}
+
+
+.books-table th:nth-child(1),
+.books-table td:nth-child(1) { width: 64px; }
+.books-table th:nth-child(7),
+.books-table td:nth-child(7) { width: 110px; }
+.books-table th:nth-child(8),
+.books-table td:nth-child(8) { width: 96px; }
+
+.clients-table th:nth-child(1),
+.clients-table td:nth-child(1) { width: 64px; }
+.clients-table th:nth-child(3),
+.clients-table td:nth-child(3) { width: 140px; }
+.clients-table th:nth-child(4),
+.clients-table td:nth-child(4) { width: 140px; }
+.clients-table th:nth-child(6),
+.clients-table td:nth-child(6) { width: 96px; }
+
+.rentals-table th:nth-child(7),
+.rentals-table td:nth-child(7) { width: 120px; }
+
+.history-table th:nth-child(1),
+.history-table td:nth-child(1) { width: 42px; }
+
+.books-table td,
+.books-table th,
+.clients-table td,
+.clients-table th {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clients-table td:nth-child(5),
+.clients-table th:nth-child(5) {
+  white-space: normal;
 }
 
 .status {
@@ -516,6 +592,15 @@ tr.overdue {
   }
 
   .panel-search {
+    width: 100%;
+  }
+
+  .history-tools {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .compact-search {
     width: 100%;
   }
 
