@@ -181,7 +181,7 @@ function renderClientOptions() {
 function renderBooks() {
   if (!els.booksTable) return;
   if (!state.books.length) {
-    els.booksTable.innerHTML = `<tr><td colspan="5">Nenhum livro cadastrado.</td></tr>`;
+    els.booksTable.innerHTML = `<tr><td colspan="8">Nenhum livro cadastrado.</td></tr>`;
     return;
   }
   const rentedIds = new Set(activeRentals().map((r) => r.bookId));
@@ -190,6 +190,9 @@ function renderBooks() {
         <td>${book.id}</td>
         <td>${book.title}</td>
         <td>${book.author}</td>
+        <td>${book.location || "-"}</td>
+        <td>${book.genre || "-"}</td>
+        <td>${book.publisher || "-"}</td>
         <td><span class="status ${rentedIds.has(book.id) ? "status-danger" : "status-ok"}">${rentedIds.has(book.id) ? "Emprestado" : "Disponível"}</span></td>
         <td class="row-actions">
           <button type="button" class="action-btn icon-btn" title="Editar livro" aria-label="Editar livro" data-edit-book="${book.id}">${EDIT_ICON}</button>
@@ -202,7 +205,7 @@ function renderBooks() {
 function renderClients() {
   if (!els.clientsTable) return;
   if (!state.clients.length) {
-    els.clientsTable.innerHTML = `<tr><td colspan="5">Nenhum cliente cadastrado.</td></tr>`;
+    els.clientsTable.innerHTML = `<tr><td colspan="6">Nenhum cliente cadastrado.</td></tr>`;
     return;
   }
   els.clientsTable.innerHTML = state.clients
@@ -211,6 +214,7 @@ function renderClients() {
       <td>${client.name}</td>
       <td>${client.cpf || "-"}</td>
       <td>${client.phone || "-"}</td>
+      <td>${client.address || "-"}</td>
       <td class="row-actions">
         <button type="button" class="action-btn icon-btn" title="Editar cliente" aria-label="Editar cliente" data-edit-client="${client.id}">${EDIT_ICON}</button>
         <button type="button" class="action-btn warn icon-btn" title="Excluir cliente" aria-label="Excluir cliente" data-remove-client="${client.id}">${TRASH_ICON}</button>
@@ -301,10 +305,13 @@ async function handleBookSubmit(e) {
   const id = sanitizeDigits(document.querySelector("#bookId")?.value.trim() || "");
   const title = document.querySelector("#bookTitle")?.value.trim() || "";
   const author = document.querySelector("#bookAuthor")?.value.trim() || "";
+  const location = document.querySelector("#bookLocation")?.value.trim() || "";
+  const genre = document.querySelector("#bookGenre")?.value.trim() || "";
+  const publisher = document.querySelector("#bookPublisher")?.value.trim() || "";
 
   if (!id) return notify("ID do livro deve conter apenas números.");
   try {
-    await api("create_book", { id, title, author });
+    await api("create_book", { id, title, author, location, genre, publisher });
     await refreshAndRender();
     e.target.reset();
     notify("Livro cadastrado com sucesso.");
@@ -318,13 +325,14 @@ async function handleClientSubmit(e) {
   const name = document.querySelector("#clientName")?.value.trim() || "";
   const cpf = sanitizeDigits(document.querySelector("#clientCpf")?.value.trim() || "");
   const phone = sanitizeDigits(document.querySelector("#clientPhone")?.value.trim() || "");
+  const address = document.querySelector("#clientAddress")?.value.trim() || "";
 
   if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test(name)) return notify("Nome do cliente deve conter apenas letras.");
   if (cpf.length !== CPF_DIGITS) return notify("CPF deve ter 11 números.");
   if (phone.length < PHONE_MIN_DIGITS || phone.length > PHONE_MAX_DIGITS) return notify("Telefone deve ter 10 ou 11 números.");
 
   try {
-    await api("create_client", { name, cpf, phone });
+    await api("create_client", { name, cpf, phone, address });
     await refreshAndRender();
     e.target.reset();
     notify("Cliente cadastrado com sucesso.");
@@ -339,10 +347,13 @@ async function handleBookEditSubmit(e) {
   const id = sanitizeDigits(document.querySelector("#bookEditId")?.value.trim() || "");
   const title = document.querySelector("#bookEditTitle")?.value.trim() || "";
   const author = document.querySelector("#bookEditAuthor")?.value.trim() || "";
+  const location = document.querySelector("#bookEditLocation")?.value.trim() || "";
+  const genre = document.querySelector("#bookEditGenre")?.value.trim() || "";
+  const publisher = document.querySelector("#bookEditPublisher")?.value.trim() || "";
   if (!id) return notify("ID do livro deve conter apenas números.");
 
   try {
-    await api("update_book", { currentId: editingBookId, id, title, author });
+    await api("update_book", { currentId: editingBookId, id, title, author, location, genre, publisher });
     editingBookId = null;
     closeModal(els.bookEditModal);
     await refreshAndRender();
@@ -359,13 +370,14 @@ async function handleClientEditSubmit(e) {
   const name = document.querySelector("#clientEditName")?.value.trim() || "";
   const cpf = sanitizeDigits(document.querySelector("#clientEditCpf")?.value.trim() || "");
   const phone = sanitizeDigits(document.querySelector("#clientEditPhone")?.value.trim() || "");
+  const address = document.querySelector("#clientEditAddress")?.value.trim() || "";
 
   if (!/^[A-Za-zÀ-ÖØ-öø-ÿ\s]+$/.test(name)) return notify("Nome do cliente deve conter apenas letras.");
   if (cpf.length !== CPF_DIGITS) return notify("CPF deve ter 11 números.");
   if (phone.length < PHONE_MIN_DIGITS || phone.length > PHONE_MAX_DIGITS) return notify("Telefone deve ter 10 ou 11 números.");
 
   try {
-    await api("update_client", { id, name, cpf, phone });
+    await api("update_client", { id, name, cpf, phone, address });
     editingClientId = null;
     closeModal(els.clientEditModal);
     await refreshAndRender();
@@ -423,6 +435,9 @@ async function handleTableClick(e) {
     document.querySelector("#bookEditId").value = book.id;
     document.querySelector("#bookEditTitle").value = book.title;
     document.querySelector("#bookEditAuthor").value = book.author;
+    document.querySelector("#bookEditLocation").value = book.location || "";
+    document.querySelector("#bookEditGenre").value = book.genre || "";
+    document.querySelector("#bookEditPublisher").value = book.publisher || "";
     openModal(els.bookEditModal);
     return;
   }
@@ -435,6 +450,7 @@ async function handleTableClick(e) {
     document.querySelector("#clientEditName").value = client.name;
     document.querySelector("#clientEditCpf").value = client.cpf;
     document.querySelector("#clientEditPhone").value = client.phone;
+    document.querySelector("#clientEditAddress").value = client.address || "";
     openModal(els.clientEditModal);
     return;
   }

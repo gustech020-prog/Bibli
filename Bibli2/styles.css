@@ -283,7 +283,7 @@ details.panel > summary .panel-title-row {
 
 .client-form-grid {
   display: grid;
-  grid-template-columns: 1fr 2fr 1.1fr 1.2fr auto;
+  grid-template-columns: 1.4fr 1.1fr 1.2fr 2fr auto;
   gap: 0.6rem;
   margin-bottom: 1rem;
 }
@@ -461,7 +461,7 @@ tr.overdue {
 }
 
 .modal-grid-client {
-  grid-template-columns: 1fr 2fr 1fr 1fr;
+  grid-template-columns: 1fr 1.6fr 1fr 1fr 1.7fr;
 }
 
 .modal-actions {

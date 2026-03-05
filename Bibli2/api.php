@@ -36,7 +36,10 @@ function db(): PDO
         'CREATE TABLE IF NOT EXISTS books (
             id TEXT PRIMARY KEY,
             title TEXT NOT NULL,
-            author TEXT NOT NULL
+            author TEXT NOT NULL,
+            location TEXT NOT NULL DEFAULT \'\',
+            genre TEXT NOT NULL DEFAULT \'\',
+            publisher TEXT NOT NULL DEFAULT \'\'
         )'
     );
 
@@ -45,7 +48,8 @@ function db(): PDO
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             cpf TEXT NOT NULL UNIQUE,
-            phone TEXT NOT NULL
+            phone TEXT NOT NULL,
+            address TEXT NOT NULL DEFAULT \'\'
         )'
     );
 
@@ -62,12 +66,30 @@ function db(): PDO
         )'
     );
 
+    ensureColumn($pdo, 'books', 'location', "TEXT NOT NULL DEFAULT \'\'");
+    ensureColumn($pdo, 'books', 'genre', "TEXT NOT NULL DEFAULT \'\'");
+    ensureColumn($pdo, 'books', 'publisher', "TEXT NOT NULL DEFAULT \'\'");
+    ensureColumn($pdo, 'clients', 'address', "TEXT NOT NULL DEFAULT \'\'");
+
     return $pdo;
+}
+
+
+function ensureColumn(PDO $pdo, string $table, string $column, string $definition): void
+{
+    $stmt = $pdo->query("PRAGMA table_info($table)");
+    $columns = $stmt ? $stmt->fetchAll() : [];
+    foreach ($columns as $col) {
+        if (($col['name'] ?? '') === $column) {
+            return;
+        }
+    }
+    $pdo->exec("ALTER TABLE $table ADD COLUMN $column $definition");
 }
 
 function findBook(PDO $pdo, string $id): ?array
 {
-    $stmt = $pdo->prepare('SELECT id, title, author FROM books WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT id, title, author, location, genre, publisher FROM books WHERE id = :id');
     $stmt->execute(['id' => $id]);
     $row = $stmt->fetch();
     return $row ?: null;
@@ -75,7 +97,7 @@ function findBook(PDO $pdo, string $id): ?array
 
 function findClient(PDO $pdo, string $id): ?array
 {
-    $stmt = $pdo->prepare('SELECT id, name, cpf, phone FROM clients WHERE id = :id');
+    $stmt = $pdo->prepare('SELECT id, name, cpf, phone, address FROM clients WHERE id = :id');
     $stmt->execute(['id' => (int) $id]);
     $row = $stmt->fetch();
     return $row ?: null;
@@ -83,8 +105,8 @@ function findClient(PDO $pdo, string $id): ?array
 
 function getState(PDO $pdo): array
 {
-    $books = $pdo->query('SELECT id, title, author FROM books ORDER BY CAST(id as INTEGER), id')->fetchAll();
-    $clients = $pdo->query('SELECT id, name, cpf, phone FROM clients ORDER BY id')->fetchAll();
+    $books = $pdo->query('SELECT id, title, author, location, genre, publisher FROM books ORDER BY CAST(id as INTEGER), id')->fetchAll();
+    $clients = $pdo->query('SELECT id, name, cpf, phone, address FROM clients ORDER BY id')->fetchAll();
     $rentals = $pdo->query('SELECT book_id, client_id, start_date, due_date, returned_date, id FROM rentals ORDER BY id')->fetchAll();
 
     $clients = array_map(static function (array $c): array {
@@ -93,6 +115,7 @@ function getState(PDO $pdo): array
             'name' => $c['name'],
             'cpf' => $c['cpf'],
             'phone' => $c['phone'],
+            'address' => $c['address'] ?? '',
         ];
     }, $clients);
 
@@ -141,6 +164,9 @@ try {
             $id = (string) ($payload['id'] ?? '');
             $title = trim((string) ($payload['title'] ?? ''));
             $author = trim((string) ($payload['author'] ?? ''));
+            $location = trim((string) ($payload['location'] ?? ''));
+            $genre = trim((string) ($payload['genre'] ?? ''));
+            $publisher = trim((string) ($payload['publisher'] ?? ''));
 
             if ($id === '') {
                 respond(['ok' => false, 'message' => 'ID do livro é obrigatório.'], 400);
@@ -149,8 +175,8 @@ try {
                 respond(['ok' => false, 'message' => 'Já existe um livro com este ID.'], 409);
             }
 
-            $stmt = $pdo->prepare('INSERT INTO books (id, title, author) VALUES (:id, :title, :author)');
-            $stmt->execute(['id' => $id, 'title' => $title, 'author' => $author]);
+            $stmt = $pdo->prepare('INSERT INTO books (id, title, author, location, genre, publisher) VALUES (:id, :title, :author, :location, :genre, :publisher)');
+            $stmt->execute(['id' => $id, 'title' => $title, 'author' => $author, 'location' => $location, 'genre' => $genre, 'publisher' => $publisher]);
             respond(['ok' => true]);
         }
 
@@ -159,6 +185,9 @@ try {
             $id = (string) ($payload['id'] ?? '');
             $title = trim((string) ($payload['title'] ?? ''));
             $author = trim((string) ($payload['author'] ?? ''));
+            $location = trim((string) ($payload['location'] ?? ''));
+            $genre = trim((string) ($payload['genre'] ?? ''));
+            $publisher = trim((string) ($payload['publisher'] ?? ''));
 
             if (findBook($pdo, $currentId) === null) {
                 respond(['ok' => false, 'message' => 'Livro não encontrado.'], 404);
@@ -168,8 +197,8 @@ try {
             }
 
             $pdo->beginTransaction();
-            $stmt = $pdo->prepare('UPDATE books SET id = :id, title = :title, author = :author WHERE id = :currentId');
-            $stmt->execute(['id' => $id, 'title' => $title, 'author' => $author, 'currentId' => $currentId]);
+            $stmt = $pdo->prepare('UPDATE books SET id = :id, title = :title, author = :author, location = :location, genre = :genre, publisher = :publisher WHERE id = :currentId');
+            $stmt->execute(['id' => $id, 'title' => $title, 'author' => $author, 'location' => $location, 'genre' => $genre, 'publisher' => $publisher, 'currentId' => $currentId]);
             $stmt = $pdo->prepare('UPDATE rentals SET book_id = :newId WHERE book_id = :currentId');
             $stmt->execute(['newId' => $id, 'currentId' => $currentId]);
             $pdo->commit();
@@ -192,6 +221,7 @@ try {
             $name = trim((string) ($payload['name'] ?? ''));
             $cpf = (string) ($payload['cpf'] ?? '');
             $phone = (string) ($payload['phone'] ?? '');
+            $address = trim((string) ($payload['address'] ?? ''));
 
             $stmt = $pdo->prepare('SELECT COUNT(*) FROM clients WHERE cpf = :cpf');
             $stmt->execute(['cpf' => $cpf]);
@@ -199,8 +229,8 @@ try {
                 respond(['ok' => false, 'message' => 'Já existe um cliente com este CPF.'], 409);
             }
 
-            $stmt = $pdo->prepare('INSERT INTO clients (name, cpf, phone) VALUES (:name, :cpf, :phone)');
-            $stmt->execute(['name' => $name, 'cpf' => $cpf, 'phone' => $phone]);
+            $stmt = $pdo->prepare('INSERT INTO clients (name, cpf, phone, address) VALUES (:name, :cpf, :phone, :address)');
+            $stmt->execute(['name' => $name, 'cpf' => $cpf, 'phone' => $phone, 'address' => $address]);
             respond(['ok' => true]);
         }
 
@@ -209,6 +239,7 @@ try {
             $name = trim((string) ($payload['name'] ?? ''));
             $cpf = (string) ($payload['cpf'] ?? '');
             $phone = (string) ($payload['phone'] ?? '');
+            $address = trim((string) ($payload['address'] ?? ''));
 
             if (findClient($pdo, $id) === null) {
                 respond(['ok' => false, 'message' => 'Cliente não encontrado.'], 404);
@@ -220,8 +251,8 @@ try {
                 respond(['ok' => false, 'message' => 'Já existe um cliente com este CPF.'], 409);
             }
 
-            $stmt = $pdo->prepare('UPDATE clients SET name = :name, cpf = :cpf, phone = :phone WHERE id = :id');
-            $stmt->execute(['name' => $name, 'cpf' => $cpf, 'phone' => $phone, 'id' => (int) $id]);
+            $stmt = $pdo->prepare('UPDATE clients SET name = :name, cpf = :cpf, phone = :phone, address = :address WHERE id = :id');
+            $stmt->execute(['name' => $name, 'cpf' => $cpf, 'phone' => $phone, 'address' => $address, 'id' => (int) $id]);
             respond(['ok' => true]);
         }
 

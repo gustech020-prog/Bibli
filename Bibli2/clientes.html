@@ -82,6 +82,7 @@
             maxlength="11"
             required
           />
+          <input type="text" id="clientAddress" placeholder="Endereço" required />
           <button type="submit">Salvar Cliente</button>
         </form>
 
@@ -92,6 +93,7 @@
               <th>Nome</th>
               <th>CPF</th>
               <th>Telefone</th>
+              <th>Endereço</th>
               <th></th>
             </tr>
           </thead>
@@ -109,6 +111,7 @@
           <input type="text" id="clientEditName" placeholder="Nome" required />
           <input type="text" id="clientEditCpf" placeholder="CPF (11 dígitos)" inputmode="numeric" minlength="11" maxlength="11" required />
           <input type="text" id="clientEditPhone" placeholder="Telefone (10 ou 11 dígitos)" inputmode="numeric" minlength="10" maxlength="11" required />
+          <input type="text" id="clientEditAddress" placeholder="Endereço" required />
           <div class="modal-actions">
             <button type="button" class="action-btn" id="clientEditCancel">Cancelar</button>
             <button type="submit">Salvar alteração</button>
