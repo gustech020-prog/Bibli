@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BibliFlow | Empréstimos</title>
+    <title>BibliFlow | Clientes</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -54,76 +54,77 @@
     </header>
 
     <nav class="page-nav">
-      <a class="nav-link active" href="index.html">Empréstimos</a>
+      <a class="nav-link" href="index.html">Empréstimos</a>
       <a class="nav-link" href="livros.html">Livros</a>
-      <a class="nav-link" href="clientes.html">Clientes</a>
+      <a class="nav-link active" href="clientes.html">Clientes</a>
     </nav>
 
     <main class="single-layout">
       <section class="panel panel-wide">
-        <div class="panel-title-row">
-          <h2>Gerenciar Empréstimos</h2>
-        </div>
-        <form id="rentalForm" class="form-grid rental-grid">
-          <select id="rentalBook" required>
-            <option value="">Selecione um livro</option>
-          </select>
-          <select id="rentalClient" required>
-            <option value="">Selecione um cliente</option>
-          </select>
-          <input type="date" id="rentalStart" required />
-          <button type="submit">Registrar Empréstimo (10 dias)</button>
+        <h2>Clientes</h2>
+        <form id="clientForm" class="client-form-grid">
+          <input type="text" id="clientName" placeholder="Nome" required />
+          <input
+            type="text"
+            id="clientCpf"
+            placeholder="CPF (11 dígitos)"
+            inputmode="numeric"
+            minlength="11"
+            maxlength="11"
+            required
+          />
+          <input
+            type="text"
+            id="clientPhone"
+            placeholder="Telefone (10 ou 11 dígitos)"
+            inputmode="numeric"
+            minlength="10"
+            maxlength="11"
+            required
+          />
+          <input type="text" id="clientAddress" placeholder="Endereço" required />
+          <button type="submit">Salvar Cliente</button>
         </form>
 
+        <div class="table-tools">
+          <input type="search" id="clientsSearch" placeholder="Buscar cliente por nome, CPF, telefone ou endereço" />
+        </div>
+
         <div class="table-wrap">
-        <table class="rentals-table">
+        <table class="clients-table">
           <thead>
             <tr>
-              <th>Livro</th>
-              <th>Cliente</th>
-              <th>Início</th>
-              <th>Vencimento</th>
-              <th>Devolução</th>
-              <th>Status</th>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>CPF</th>
+              <th>Telefone</th>
+              <th>Endereço</th>
               <th>Ações</th>
             </tr>
           </thead>
-          <tbody id="activeRentalsTable"></tbody>
+          <tbody id="clientsTable"></tbody>
         </table>
         </div>
       </section>
-
-      <details class="panel panel-wide" open>
-        <summary>
-          <div class="panel-title-row">
-            <h2>Histórico de Empréstimos</h2>
-            <div class="history-tools">
-              <label class="search-with-icon compact-search" aria-label="Buscar no histórico de empréstimos">
-                <span class="search-icon" aria-hidden="true">🔍</span>
-                <input type="search" id="rentalsSearch" class="panel-search" placeholder="Buscar no histórico" />
-              </label>
-              <button type="button" id="deleteHistoryBtn" class="action-btn warn compact">🗑 Apagar selecionados</button>
-            </div>
-          </div>
-        </summary>
-        <div class="table-wrap">
-        <table class="history-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Livro</th>
-              <th>Cliente</th>
-              <th>Início</th>
-              <th>Vencimento</th>
-              <th>Devolução</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="rentalsHistoryTable"></tbody>
-        </table>
-        </div>
-      </details>
     </main>
+
+
+    <div id="clientEditModal" class="modal" aria-hidden="true">
+      <div class="modal-card">
+        <h3>Editar Cliente</h3>
+        <form id="clientEditForm" class="client-form-grid modal-grid-client">
+          <input type="text" id="clientEditId" placeholder="ID do cliente" readonly />
+          <input type="text" id="clientEditName" placeholder="Nome" required />
+          <input type="text" id="clientEditCpf" placeholder="CPF (11 dígitos)" inputmode="numeric" minlength="11" maxlength="11" required />
+          <input type="text" id="clientEditPhone" placeholder="Telefone (10 ou 11 dígitos)" inputmode="numeric" minlength="10" maxlength="11" required />
+          <input type="text" id="clientEditAddress" placeholder="Endereço" required />
+          <div class="modal-actions">
+            <button type="button" class="action-btn" id="clientEditCancel">Cancelar</button>
+            <button type="submit">Salvar alteração</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <div id="toast" class="toast" aria-live="polite"></div>
 

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BibliFlow | Empréstimos</title>
+    <title>BibliFlow | Livros</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -54,76 +54,66 @@
     </header>
 
     <nav class="page-nav">
-      <a class="nav-link active" href="index.html">Empréstimos</a>
-      <a class="nav-link" href="livros.html">Livros</a>
+      <a class="nav-link" href="index.html">Empréstimos</a>
+      <a class="nav-link active" href="livros.html">Livros</a>
       <a class="nav-link" href="clientes.html">Clientes</a>
     </nav>
 
     <main class="single-layout">
       <section class="panel panel-wide">
-        <div class="panel-title-row">
-          <h2>Gerenciar Empréstimos</h2>
-        </div>
-        <form id="rentalForm" class="form-grid rental-grid">
-          <select id="rentalBook" required>
-            <option value="">Selecione um livro</option>
-          </select>
-          <select id="rentalClient" required>
-            <option value="">Selecione um cliente</option>
-          </select>
-          <input type="date" id="rentalStart" required />
-          <button type="submit">Registrar Empréstimo (10 dias)</button>
+        <h2>Livros</h2>
+        <form id="bookForm" class="form-grid">
+          <input type="text" id="bookId" placeholder="ID do livro" inputmode="numeric" required />
+          <input type="text" id="bookTitle" placeholder="Título" required />
+          <input type="text" id="bookAuthor" placeholder="Autor" required />
+          <input type="text" id="bookLocation" placeholder="Local" required />
+          <input type="text" id="bookGenre" placeholder="Gênero" required />
+          <input type="text" id="bookPublisher" placeholder="Editora" required />
+          <button type="submit">Salvar Livro</button>
         </form>
 
+        <div class="table-tools">
+          <input type="search" id="booksSearch" placeholder="Buscar livro por qualquer informação" />
+        </div>
+
         <div class="table-wrap">
-        <table class="rentals-table">
+        <table class="books-table">
           <thead>
             <tr>
-              <th>Livro</th>
-              <th>Cliente</th>
-              <th>Início</th>
-              <th>Vencimento</th>
-              <th>Devolução</th>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Autor</th>
+              <th>Local</th>
+              <th>Gênero</th>
+              <th>Editora</th>
               <th>Status</th>
               <th>Ações</th>
             </tr>
           </thead>
-          <tbody id="activeRentalsTable"></tbody>
+          <tbody id="booksTable"></tbody>
         </table>
         </div>
       </section>
-
-      <details class="panel panel-wide" open>
-        <summary>
-          <div class="panel-title-row">
-            <h2>Histórico de Empréstimos</h2>
-            <div class="history-tools">
-              <label class="search-with-icon compact-search" aria-label="Buscar no histórico de empréstimos">
-                <span class="search-icon" aria-hidden="true">🔍</span>
-                <input type="search" id="rentalsSearch" class="panel-search" placeholder="Buscar no histórico" />
-              </label>
-              <button type="button" id="deleteHistoryBtn" class="action-btn warn compact">🗑 Apagar selecionados</button>
-            </div>
-          </div>
-        </summary>
-        <div class="table-wrap">
-        <table class="history-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Livro</th>
-              <th>Cliente</th>
-              <th>Início</th>
-              <th>Vencimento</th>
-              <th>Devolução</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="rentalsHistoryTable"></tbody>
-        </table>
-        </div>
-      </details>
     </main>
+
+
+    <div id="bookEditModal" class="modal" aria-hidden="true">
+      <div class="modal-card">
+        <h3>Editar Livro</h3>
+        <form id="bookEditForm" class="form-grid modal-grid">
+          <input type="text" id="bookEditId" placeholder="ID do livro" inputmode="numeric" required />
+          <input type="text" id="bookEditTitle" placeholder="Título" required />
+          <input type="text" id="bookEditAuthor" placeholder="Autor" required />
+          <input type="text" id="bookEditLocation" placeholder="Local" required />
+          <input type="text" id="bookEditGenre" placeholder="Gênero" required />
+          <input type="text" id="bookEditPublisher" placeholder="Editora" required />
+          <div class="modal-actions">
+            <button type="button" class="action-btn" id="bookEditCancel">Cancelar</button>
+            <button type="submit">Salvar alteração</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <div id="toast" class="toast" aria-live="polite"></div>
 
