@@ -44,3 +44,17 @@ Para uso real em rede/produção:
 1. Hospede em Apache/Nginx + PHP 7.4+.
 2. Garanta permissão de escrita em `Bibli2/data/`.
 3. Para alto volume, substitua SQLite por MySQL/PostgreSQL mantendo a mesma camada de API.
+
+
+## Solução de problemas
+
+Se aparecer **"Falha ao inicializar banco SQL (SQLite/PDO)"**:
+
+1. Verifique no `php.ini` se as extensões estão ativas (sem `;`):
+   - `extension=pdo_sqlite`
+   - `extension=sqlite3`
+2. Reinicie Apache/PHP após alterar o `php.ini`.
+3. Garanta permissão de escrita na pasta `Bibli2/data`.
+
+No XAMPP, o arquivo costuma ficar em `xampp/php/php.ini`.
+

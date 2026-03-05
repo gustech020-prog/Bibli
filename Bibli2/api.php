@@ -13,6 +13,20 @@ function respond(array $payload, int $status = 200): void
     exit;
 }
 
+
+function explainInitError(Throwable $e): string
+{
+    $base = 'Falha ao inicializar banco SQL (SQLite/PDO).';
+    if (!extension_loaded('pdo_sqlite')) {
+        return $base . ' Ative a extensão pdo_sqlite no php.ini e reinicie o servidor Apache/PHP.';
+    }
+    $msg = trim($e->getMessage());
+    if ($msg !== '') {
+        return $base . ' Detalhe: ' . $msg;
+    }
+    return $base;
+}
+
 function db(): PDO
 {
     static $pdo = null;
@@ -20,8 +34,15 @@ function db(): PDO
         return $pdo;
     }
 
-    if (!is_dir(__DIR__ . '/data')) {
-        mkdir(__DIR__ . '/data', 0775, true);
+    $dataDir = __DIR__ . '/data';
+    if (!is_dir($dataDir) && !mkdir($dataDir, 0775, true) && !is_dir($dataDir)) {
+        throw new RuntimeException('Não foi possível criar o diretório de dados: ' . $dataDir);
+    }
+    if (!is_writable($dataDir)) {
+        throw new RuntimeException('Sem permissão de escrita no diretório de dados: ' . $dataDir);
+    }
+    if (!extension_loaded('pdo_sqlite')) {
+        throw new RuntimeException('Extensão pdo_sqlite não está habilitada.');
     }
 
     $pdo = new PDO('sqlite:' . DB_FILE, null, null, [
@@ -147,7 +168,7 @@ if (!is_array($payload)) {
 try {
     $pdo = db();
 } catch (Throwable $e) {
-    respond(['ok' => false, 'message' => 'Falha ao inicializar banco SQL (SQLite/PDO).'], 500);
+    respond(['ok' => false, 'message' => explainInitError($e)], 500);
 }
 
 if ($method === 'GET' && $action === 'state') {
@@ -331,5 +352,6 @@ try {
             respond(['ok' => false, 'message' => 'Ação inválida.'], 400);
     }
 } catch (Throwable $e) {
-    respond(['ok' => false, 'message' => 'Erro interno de servidor.'], 500);
+    $msg = trim($e->getMessage());
+    respond(['ok' => false, 'message' => $msg !== '' ? $msg : 'Erro interno de servidor.'], 500);
 }
