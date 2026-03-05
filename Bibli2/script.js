@@ -48,6 +48,9 @@ const els = {
   clientEditModal: document.querySelector("#clientEditModal"),
   clientEditForm: document.querySelector("#clientEditForm"),
   clientEditCancel: document.querySelector("#clientEditCancel"),
+  booksSearch: document.querySelector("#booksSearch"),
+  clientsSearch: document.querySelector("#clientsSearch"),
+  rentalsSearch: document.querySelector("#rentalsSearch"),
 };
 
 async function api(action, payload = {}, method = "POST") {
@@ -135,6 +138,24 @@ function sanitizeDigits(value) {
   return value.replace(/\D/g, "");
 }
 
+
+function normalizeText(value) {
+  return String(value || "")
+    .toLocaleLowerCase("pt-BR")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+function includesQuery(haystack, query) {
+  if (!query) return true;
+  return normalizeText(haystack).includes(query);
+}
+
+function getSearchValue(input) {
+  return normalizeText(input?.value || "");
+}
+
 function activeRentals() {
   return state.rentals.filter((r) => !r.returnedDate);
 }
@@ -180,12 +201,21 @@ function renderClientOptions() {
 
 function renderBooks() {
   if (!els.booksTable) return;
-  if (!state.books.length) {
-    els.booksTable.innerHTML = `<tr><td colspan="8">Nenhum livro cadastrado.</td></tr>`;
+  const query = getSearchValue(els.booksSearch);
+  const books = state.books.filter((book) => {
+    const status = activeRentals().some((r) => r.bookId === book.id) ? "emprestado" : "disponivel";
+    const text = `${book.id} ${book.title} ${book.author} ${book.location || ""} ${book.genre || ""} ${book.publisher || ""} ${status}`;
+    return includesQuery(text, query);
+  });
+
+  if (!books.length) {
+    const emptyMsg = state.books.length ? "Nenhum livro encontrado." : "Nenhum livro cadastrado.";
+    els.booksTable.innerHTML = `<tr><td colspan="8">${emptyMsg}</td></tr>`;
     return;
   }
+
   const rentedIds = new Set(activeRentals().map((r) => r.bookId));
-  els.booksTable.innerHTML = state.books
+  els.booksTable.innerHTML = books
     .map((book) => `<tr>
         <td>${book.id}</td>
         <td>${book.title}</td>
@@ -204,11 +234,16 @@ function renderBooks() {
 
 function renderClients() {
   if (!els.clientsTable) return;
-  if (!state.clients.length) {
-    els.clientsTable.innerHTML = `<tr><td colspan="6">Nenhum cliente cadastrado.</td></tr>`;
+  const query = getSearchValue(els.clientsSearch);
+  const clients = state.clients.filter((client) => includesQuery(`${client.id} ${client.name} ${client.cpf || ""} ${client.phone || ""} ${client.address || ""}`, query));
+
+  if (!clients.length) {
+    const emptyMsg = state.clients.length ? "Nenhum cliente encontrado." : "Nenhum cliente cadastrado.";
+    els.clientsTable.innerHTML = `<tr><td colspan="6">${emptyMsg}</td></tr>`;
     return;
   }
-  els.clientsTable.innerHTML = state.clients
+
+  els.clientsTable.innerHTML = clients
     .map((client) => `<tr>
       <td>${client.id}</td>
       <td>${client.name}</td>
@@ -225,11 +260,21 @@ function renderClients() {
 
 function renderActiveRentals() {
   if (!els.activeRentalsTable) return;
-  const rentals = activeRentals();
+  const query = getSearchValue(els.rentalsSearch);
+  const rentals = activeRentals().filter((rental) => {
+    const book = getBookById(rental.bookId);
+    const client = getClientById(rental.clientId);
+    const overdue = isOverdue(rental.dueDate);
+    const text = `${book?.id || rental.bookId} ${book?.title || ""} ${book?.author || ""} ${book?.location || ""} ${book?.genre || ""} ${book?.publisher || ""} ${client?.id || rental.clientId} ${client?.name || ""} ${client?.cpf || ""} ${client?.phone || ""} ${client?.address || ""} ${fmtDate(rental.startDate)} ${fmtDate(rental.dueDate)} ${overdue ? "atrasado" : "no prazo"} ativo`;
+    return includesQuery(text, query);
+  });
+
   if (!rentals.length) {
-    els.activeRentalsTable.innerHTML = `<tr><td colspan="7">Nenhum empréstimo ativo.</td></tr>`;
+    const emptyMsg = activeRentals().length ? "Nenhum empréstimo ativo encontrado." : "Nenhum empréstimo ativo.";
+    els.activeRentalsTable.innerHTML = `<tr><td colspan="7">${emptyMsg}</td></tr>`;
     return;
   }
+
   els.activeRentalsTable.innerHTML = rentals
     .map((rental) => {
       const overdue = isOverdue(rental.dueDate);
@@ -250,18 +295,32 @@ function renderActiveRentals() {
 
 function renderRentalsHistory() {
   if (!els.rentalsHistoryTable) return;
-  if (!state.rentals.length) {
-    els.rentalsHistoryTable.innerHTML = `<tr><td colspan="7">Nenhum histórico de empréstimo.</td></tr>`;
+  const query = getSearchValue(els.rentalsSearch);
+  const rentals = state.rentals
+    .map((rental, index) => ({ rental, index }))
+    .filter(({ rental }) => {
+      const book = getBookById(rental.bookId);
+      const client = getClientById(rental.clientId);
+      const overdue = isOverdue(rental.dueDate);
+      const statusText = rental.returnedDate ? "devolvido" : overdue ? "atrasado" : "ativo";
+      const text = `${book?.id || rental.bookId} ${book?.title || ""} ${book?.author || ""} ${book?.location || ""} ${book?.genre || ""} ${book?.publisher || ""} ${client?.id || rental.clientId} ${client?.name || ""} ${client?.cpf || ""} ${client?.phone || ""} ${client?.address || ""} ${fmtDate(rental.startDate)} ${fmtDate(rental.dueDate)} ${fmtDate(rental.returnedDate)} ${statusText}`;
+      return includesQuery(text, query);
+    });
+
+  if (!rentals.length) {
+    const emptyMsg = state.rentals.length ? "Nenhum empréstimo encontrado no histórico." : "Nenhum histórico de empréstimo.";
+    els.rentalsHistoryTable.innerHTML = `<tr><td colspan="7">${emptyMsg}</td></tr>`;
     return;
   }
-  els.rentalsHistoryTable.innerHTML = state.rentals
-    .map((rental, idx) => {
+
+  els.rentalsHistoryTable.innerHTML = rentals
+    .map(({ rental, index }) => {
       const book = getBookById(rental.bookId);
       const client = getClientById(rental.clientId);
       const overdue = isOverdue(rental.dueDate);
       const status = rental.returnedDate ? `<span class="status status-ok">Devolvido</span>` : `<span class="status ${overdue ? "status-danger" : "status-ok"}">${overdue ? "Atrasado" : "Ativo"}</span>`;
       return `<tr>
-      <td><input type="checkbox" class="history-check" data-history-index="${idx}" /></td>
+      <td><input type="checkbox" class="history-check" data-history-index="${index}" /></td>
       <td>${book ? book.title : rental.bookId}</td>
       <td>${client ? client.name : rental.clientId}</td>
       <td>${fmtDate(rental.startDate)}</td>
@@ -486,6 +545,12 @@ function bindNumericInput(selector, maxLength) {
   });
 }
 
+
+function bindSearchInput(input) {
+  if (!input) return;
+  input.addEventListener("input", renderAll);
+}
+
 async function init() {
   initTheme();
 
@@ -506,6 +571,9 @@ async function init() {
   bindNumericInput("#clientPhone", PHONE_MAX_DIGITS);
   bindNumericInput("#clientEditCpf", CPF_DIGITS);
   bindNumericInput("#clientEditPhone", PHONE_MAX_DIGITS);
+  bindSearchInput(els.booksSearch);
+  bindSearchInput(els.clientsSearch);
+  bindSearchInput(els.rentalsSearch);
 
   try {
     await refreshAndRender();

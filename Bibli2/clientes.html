@@ -86,6 +86,11 @@
           <button type="submit">Salvar Cliente</button>
         </form>
 
+        <div class="table-tools">
+          <input type="search" id="clientsSearch" placeholder="Buscar cliente por nome, CPF, telefone ou endereço" />
+        </div>
+
+        <div class="table-wrap">
         <table>
           <thead>
             <tr>
@@ -94,11 +99,12 @@
               <th>CPF</th>
               <th>Telefone</th>
               <th>Endereço</th>
-              <th></th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody id="clientsTable"></tbody>
         </table>
+        </div>
       </section>
     </main>
 

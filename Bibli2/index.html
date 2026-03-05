@@ -63,6 +63,7 @@
       <section class="panel panel-wide">
         <div class="panel-title-row">
           <h2>Gerenciar Empréstimos</h2>
+          <input type="search" id="rentalsSearch" class="panel-search" placeholder="Buscar empréstimo por qualquer informação" />
         </div>
         <form id="rentalForm" class="form-grid rental-grid">
           <select id="rentalBook" required>
@@ -75,6 +76,7 @@
           <button type="submit">Registrar Empréstimo (10 dias)</button>
         </form>
 
+        <div class="table-wrap">
         <table>
           <thead>
             <tr>
@@ -84,11 +86,12 @@
               <th>Vencimento</th>
               <th>Devolução</th>
               <th>Status</th>
-              <th></th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody id="activeRentalsTable"></tbody>
         </table>
+        </div>
       </section>
 
       <details class="panel panel-wide" open>
@@ -98,6 +101,7 @@
             <button type="button" id="deleteHistoryBtn" class="action-btn warn compact">🗑 Apagar selecionados</button>
           </div>
         </summary>
+        <div class="table-wrap">
         <table>
           <thead>
             <tr>
@@ -112,6 +116,7 @@
           </thead>
           <tbody id="rentalsHistoryTable"></tbody>
         </table>
+        </div>
       </details>
     </main>
 
