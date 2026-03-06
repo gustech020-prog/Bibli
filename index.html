@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Biblioteca Pro | Gerenciamento</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Biblioteca Pro</h1>
+        <p>Painel de gerenciamento de livros, clientes e alugueis</p>
+      </div>
+      <div class="badge">Prazo padrão de devolução: 10 dias</div>
+    </header>
+
+    <main class="layout">
+      <section class="card">
+        <h2>Adicionar livro</h2>
+        <form id="book-form" class="form-grid">
+          <label>
+            ID do livro
+            <input type="text" name="id" placeholder="Ex: LIV-1023" required />
+          </label>
+          <label>
+            Título
+            <input type="text" name="title" placeholder="Nome do livro" required />
+          </label>
+          <label>
+            Autor
+            <input type="text" name="author" placeholder="Nome do autor" required />
+          </label>
+          <button type="submit">Salvar livro</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Adicionar cliente</h2>
+        <form id="client-form" class="form-grid">
+          <label>
+            ID do cliente
+            <input type="text" name="id" placeholder="Ex: CL-45" required />
+          </label>
+          <label>
+            Nome
+            <input type="text" name="name" placeholder="Nome completo" required />
+          </label>
+          <label>
+            Contato
+            <input type="text" name="contact" placeholder="Telefone ou e-mail" required />
+          </label>
+          <button type="submit">Salvar cliente</button>
+        </form>
+      </section>
+
+      <section class="card card-wide">
+        <h2>Registrar aluguel</h2>
+        <form id="rental-form" class="form-grid rental-grid">
+          <label>
+            Livro
+            <select name="bookId" id="book-select" required></select>
+          </label>
+          <label>
+            Cliente
+            <select name="clientId" id="client-select" required></select>
+          </label>
+          <label>
+            Data do aluguel
+            <input type="date" name="rentalDate" required />
+          </label>
+          <button type="submit">Registrar aluguel</button>
+        </form>
+      </section>
+
+      <section class="card card-wide">
+        <div class="section-title">
+          <h2>Alugueis ativos</h2>
+          <span id="overdue-count" class="counter">0 atrasados</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Livro</th>
+                <th>Cliente</th>
+                <th>Retirada</th>
+                <th>Vencimento</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="rentals-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Livros cadastrados</h2>
+        <ul id="books-list" class="simple-list"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Clientes cadastrados</h2>
+        <ul id="clients-list" class="simple-list"></ul>
+      </section>
+    </main>
+
+    <template id="empty-state-template">
+      <li class="empty">Nenhum registro ainda.</li>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
