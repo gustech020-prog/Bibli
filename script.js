@@ -1,0 +1,292 @@
+const STORAGE_KEY = "bibli-flow-data";
+const RENTAL_LIMIT_DAYS = 10;
+
+const state = {
+  books: [],
+  clients: [],
+  rentals: [],
+};
+
+const els = {
+  bookForm: document.querySelector("#bookForm"),
+  clientForm: document.querySelector("#clientForm"),
+  rentalForm: document.querySelector("#rentalForm"),
+  booksTable: document.querySelector("#booksTable"),
+  clientsTable: document.querySelector("#clientsTable"),
+  rentalsTable: document.querySelector("#rentalsTable"),
+  rentalBook: document.querySelector("#rentalBook"),
+  rentalClient: document.querySelector("#rentalClient"),
+  rentalStart: document.querySelector("#rentalStart"),
+  booksCount: document.querySelector("#booksCount"),
+  clientsCount: document.querySelector("#clientsCount"),
+  overdueCount: document.querySelector("#overdueCount"),
+  overdueCard: document.querySelector("#overdueCard"),
+  toast: document.querySelector("#toast"),
+};
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+
+  try {
+    const data = JSON.parse(raw);
+    state.books = data.books || [];
+    state.clients = data.clients || [];
+    state.rentals = data.rentals || [];
+  } catch {
+    notify("Dados locais inválidos. Reiniciando sistema.");
+  }
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function notify(message) {
+  els.toast.textContent = message;
+  els.toast.classList.add("show");
+  setTimeout(() => els.toast.classList.remove("show"), 2400);
+}
+
+function todayISO() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate()
+  ).padStart(2, "0")}`;
+}
+
+function addDays(dateISO, days) {
+  const d = new Date(dateISO + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function fmtDate(dateInput) {
+  const d = new Date(dateInput);
+  return d.toLocaleDateString("pt-BR");
+}
+
+function isOverdue(dueDateISO) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dueDate = new Date(dueDateISO + "T00:00:00");
+  return dueDate < today;
+}
+
+function availableBooks() {
+  const rentedBookIds = new Set(state.rentals.map((r) => r.bookId));
+  return state.books.filter((book) => !rentedBookIds.has(book.id));
+}
+
+function getBookById(id) {
+  return state.books.find((b) => b.id === id);
+}
+
+function getClientById(id) {
+  return state.clients.find((c) => c.id === id);
+}
+
+function updateStats() {
+  const overdueCount = state.rentals.filter((r) => isOverdue(r.dueDate)).length;
+  els.booksCount.textContent = String(state.books.length);
+  els.clientsCount.textContent = String(state.clients.length);
+  els.overdueCount.textContent = String(overdueCount);
+  els.overdueCard.classList.toggle("active", overdueCount > 0);
+}
+
+function renderBookOptions() {
+  const options = [
+    `<option value="">Selecione um livro</option>`,
+    ...availableBooks().map((book) => `<option value="${book.id}">${book.id} • ${book.title}</option>`),
+  ];
+  els.rentalBook.innerHTML = options.join("");
+}
+
+function renderClientOptions() {
+  const options = [
+    `<option value="">Selecione um cliente</option>`,
+    ...state.clients.map((client) => `<option value="${client.id}">${client.id} • ${client.name}</option>`),
+  ];
+  els.rentalClient.innerHTML = options.join("");
+}
+
+function renderBooks() {
+  if (!state.books.length) {
+    els.booksTable.innerHTML = `<tr><td colspan="5">Nenhum livro cadastrado.</td></tr>`;
+    return;
+  }
+
+  const rentedIds = new Set(state.rentals.map((r) => r.bookId));
+
+  els.booksTable.innerHTML = state.books
+    .map((book) => {
+      const busy = rentedIds.has(book.id);
+      return `<tr>
+        <td>${book.id}</td>
+        <td>${book.title}</td>
+        <td>${book.author}</td>
+        <td><span class="status ${busy ? "status-danger" : "status-ok"}">${
+        busy ? "Alugado" : "Disponível"
+      }</span></td>
+        <td><button class="action-btn warn" data-remove-book="${book.id}">Excluir</button></td>
+      </tr>`;
+    })
+    .join("");
+}
+
+function renderClients() {
+  if (!state.clients.length) {
+    els.clientsTable.innerHTML = `<tr><td colspan="4">Nenhum cliente cadastrado.</td></tr>`;
+    return;
+  }
+
+  els.clientsTable.innerHTML = state.clients
+    .map(
+      (client) => `<tr>
+      <td>${client.id}</td>
+      <td>${client.name}</td>
+      <td>${client.email}</td>
+      <td><button class="action-btn warn" data-remove-client="${client.id}">Excluir</button></td>
+    </tr>`
+    )
+    .join("");
+}
+
+function renderRentals() {
+  if (!state.rentals.length) {
+    els.rentalsTable.innerHTML = `<tr><td colspan="6">Nenhum aluguel ativo.</td></tr>`;
+    return;
+  }
+
+  els.rentalsTable.innerHTML = state.rentals
+    .map((rental) => {
+      const overdue = isOverdue(rental.dueDate);
+      const book = getBookById(rental.bookId);
+      const client = getClientById(rental.clientId);
+      return `<tr class="${overdue ? "overdue" : ""}">
+      <td>${book ? book.title : rental.bookId}</td>
+      <td>${client ? client.name : rental.clientId}</td>
+      <td>${fmtDate(rental.startDate)}</td>
+      <td>${fmtDate(rental.dueDate)}</td>
+      <td><span class="status ${overdue ? "status-danger" : "status-ok"}">${
+        overdue ? "Atrasado" : "No prazo"
+      }</span></td>
+      <td><button class="action-btn" data-return-book="${rental.bookId}">Dar baixa</button></td>
+    </tr>`;
+    })
+    .join("");
+}
+
+function renderAll() {
+  renderBooks();
+  renderClients();
+  renderRentals();
+  renderBookOptions();
+  renderClientOptions();
+  updateStats();
+}
+
+function handleBookSubmit(e) {
+  e.preventDefault();
+  const id = document.querySelector("#bookId").value.trim();
+  const title = document.querySelector("#bookTitle").value.trim();
+  const author = document.querySelector("#bookAuthor").value.trim();
+
+  if (state.books.some((book) => book.id === id)) {
+    notify("Já existe um livro com este ID.");
+    return;
+  }
+
+  state.books.push({ id, title, author });
+  saveData();
+  renderAll();
+  e.target.reset();
+  notify("Livro cadastrado com sucesso.");
+}
+
+function handleClientSubmit(e) {
+  e.preventDefault();
+  const id = document.querySelector("#clientId").value.trim();
+  const name = document.querySelector("#clientName").value.trim();
+  const email = document.querySelector("#clientEmail").value.trim();
+
+  if (state.clients.some((client) => client.id === id)) {
+    notify("Já existe um cliente com este ID.");
+    return;
+  }
+
+  state.clients.push({ id, name, email });
+  saveData();
+  renderAll();
+  e.target.reset();
+  notify("Cliente cadastrado com sucesso.");
+}
+
+function handleRentalSubmit(e) {
+  e.preventDefault();
+  const bookId = els.rentalBook.value;
+  const clientId = els.rentalClient.value;
+  const startDate = els.rentalStart.value;
+
+  if (!bookId || !clientId || !startDate) {
+    notify("Selecione livro, cliente e data de início.");
+    return;
+  }
+
+  const dueDate = addDays(startDate, RENTAL_LIMIT_DAYS).toISOString().slice(0, 10);
+  state.rentals.push({ bookId, clientId, startDate, dueDate });
+  saveData();
+  renderAll();
+  e.target.reset();
+  els.rentalStart.value = todayISO();
+  notify("Aluguel registrado por 10 dias.");
+}
+
+function handleTableClick(e) {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+
+  const returnBook = btn.dataset.returnBook;
+  const removeBook = btn.dataset.removeBook;
+  const removeClient = btn.dataset.removeClient;
+
+  if (returnBook) {
+    state.rentals = state.rentals.filter((rental) => rental.bookId !== returnBook);
+    notify("Livro devolvido e liberado.");
+  }
+
+  if (removeBook) {
+    if (state.rentals.some((r) => r.bookId === removeBook)) {
+      notify("Não é possível excluir um livro alugado.");
+      return;
+    }
+    state.books = state.books.filter((book) => book.id !== removeBook);
+    notify("Livro excluído.");
+  }
+
+  if (removeClient) {
+    if (state.rentals.some((r) => r.clientId === removeClient)) {
+      notify("Não é possível excluir cliente com aluguel ativo.");
+      return;
+    }
+    state.clients = state.clients.filter((client) => client.id !== removeClient);
+    notify("Cliente excluído.");
+  }
+
+  saveData();
+  renderAll();
+}
+
+function init() {
+  loadData();
+  els.rentalStart.value = todayISO();
+
+  els.bookForm.addEventListener("submit", handleBookSubmit);
+  els.clientForm.addEventListener("submit", handleClientSubmit);
+  els.rentalForm.addEventListener("submit", handleRentalSubmit);
+  document.body.addEventListener("click", handleTableClick);
+
+  renderAll();
+}
+
+init();

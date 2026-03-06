@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BibliFlow | Gestão de Biblioteca</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>📚 BibliFlow</h1>
+        <p>Sistema web de gerenciamento de biblioteca</p>
+      </div>
+      <div class="stats">
+        <div class="stat-card">
+          <span>Livros</span>
+          <strong id="booksCount">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>Clientes</span>
+          <strong id="clientsCount">0</strong>
+        </div>
+        <div class="stat-card danger" id="overdueCard">
+          <span>Atrasados</span>
+          <strong id="overdueCount">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid-layout">
+      <section class="panel">
+        <h2>Adicionar Livro</h2>
+        <form id="bookForm" class="form-grid">
+          <input type="text" id="bookId" placeholder="ID do livro" required />
+          <input type="text" id="bookTitle" placeholder="Título" required />
+          <input type="text" id="bookAuthor" placeholder="Autor" required />
+          <button type="submit">Salvar Livro</button>
+        </form>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Autor</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="booksTable"></tbody>
+        </table>
+      </section>
+
+      <section class="panel">
+        <h2>Adicionar Cliente</h2>
+        <form id="clientForm" class="form-grid">
+          <input type="text" id="clientId" placeholder="ID do cliente" required />
+          <input type="text" id="clientName" placeholder="Nome" required />
+          <input type="email" id="clientEmail" placeholder="E-mail" required />
+          <button type="submit">Salvar Cliente</button>
+        </form>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>E-mail</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="clientsTable"></tbody>
+        </table>
+      </section>
+
+      <section class="panel panel-wide">
+        <h2>Gerenciar Aluguéis</h2>
+        <form id="rentalForm" class="form-grid rental-grid">
+          <select id="rentalBook" required>
+            <option value="">Selecione um livro</option>
+          </select>
+          <select id="rentalClient" required>
+            <option value="">Selecione um cliente</option>
+          </select>
+          <input type="date" id="rentalStart" required />
+          <button type="submit">Registrar Aluguel (10 dias)</button>
+        </form>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Livro</th>
+              <th>Cliente</th>
+              <th>Início</th>
+              <th>Vencimento</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rentalsTable"></tbody>
+        </table>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
