@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BibliFlow | Empréstimos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        var theme = localStorage.getItem("bibli-flow-theme") === "dark" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.style.backgroundColor = theme === "dark" ? "#101010" : "#f3f3f3";
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img src="assets/logo-biblioteca.png" alt="Biblioteca Pública Municipal Dr. Octávio Augusto Borges" class="brand-logo" />
+      </div>
+      <div class="header-actions">
+        <button type="button" id="themeToggle" class="theme-toggle btn-secondary" aria-label="Ativar modo escuro">
+          <span class="theme-icon" aria-hidden="true"></span>
+        </button>
+        <div class="stats">
+          <div class="stat-card">
+            <span>Livros</span>
+            <strong id="booksCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <span>Leitores</span>
+            <strong id="clientsCount">0</strong>
+          </div>
+          <div class="stat-card danger" id="overdueCard">
+            <span>Atrasados</span>
+            <strong id="overdueCount">0</strong>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <nav class="page-nav">
+      <a class="nav-link active" href="index.html">Empréstimos</a>
+      <a class="nav-link" href="livros.html">Livros</a>
+      <a class="nav-link" href="clientes.html">Leitores</a>
+    </nav>
+
+    <main class="single-layout">
+      <section class="panel panel-wide">
+        <div class="panel-title-row">
+          <h2>Gerenciar Empréstimos</h2>
+        </div>
+        <form id="rentalForm" class="form-grid rental-grid">
+          <input type="search" id="rentalBookSearch" list="rentalBookList" placeholder="Buscar livro" required />
+          <datalist id="rentalBookList"></datalist>
+          <input type="search" id="rentalReaderSearch" list="rentalReaderList" placeholder="Buscar leitor" required />
+          <datalist id="rentalReaderList"></datalist>
+          <input type="date" id="rentalStart" required />
+          <button type="submit" class="btn-primary">Registrar empréstimo (10 dias)</button>
+        </form>
+
+        <div class="table-wrap">
+        <table class="rentals-table">
+          <thead>
+            <tr>
+              <th>Livro</th>
+              <th>Leitor</th>
+              <th>Início</th>
+              <th>Vencimento</th>
+              <th>Devolução</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="activeRentalsTable"></tbody>
+        </table>
+        </div>
+      </section>
+
+      <details class="panel panel-wide" open>
+        <summary>
+          <div class="panel-title-row">
+            <h2>Histórico de Empréstimos</h2>
+            <div class="history-tools">
+              <label class="search-with-icon compact-search" aria-label="Buscar no histórico de empréstimos">
+                <span class="search-icon" aria-hidden="true">
+                  <svg class="inline-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="11" cy="11" r="6.5"></circle>
+                    <path d="M16 16L21 21"></path>
+                  </svg>
+                </span>
+                <input type="search" id="rentalsSearch" class="panel-search" placeholder="Buscar no histórico" />
+              </label>
+              <button type="button" id="exportRentalsBtn" class="action-btn btn-secondary compact"><svg class="inline-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 3V15"></path><path d="M8 11L12 15L16 11"></path><path d="M4 17V19.5C4 20.33 4.67 21 5.5 21H18.5C19.33 21 20 20.33 20 19.5V17"></path></svg>Exportar Excel</button>
+              <button type="button" id="deleteHistoryBtn" class="action-btn btn-danger compact"><svg class="inline-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M3 6H21"></path><path d="M8 6V4.5C8 3.67 8.67 3 9.5 3H14.5C15.33 3 16 3.67 16 4.5V6"></path><path d="M19 6L18.1 19.1C18.04 19.92 17.35 20.55 16.53 20.55H7.47C6.65 20.55 5.96 19.92 5.9 19.1L5 6"></path><path d="M10 10V16"></path><path d="M14 10V16"></path></svg>Apagar selecionados</button>
+            </div>
+          </div>
+        </summary>
+        <div class="table-wrap">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Livro</th>
+              <th>Leitor</th>
+              <th>Início</th>
+              <th>Vencimento</th>
+              <th>Devolução</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="rentalsHistoryTable"></tbody>
+        </table>
+        </div>
+      </details>
+    </main>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

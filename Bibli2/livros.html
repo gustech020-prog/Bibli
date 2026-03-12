@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BibliFlow | Livros</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function () {
+        var theme = localStorage.getItem("bibli-flow-theme") === "dark" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+        document.documentElement.style.backgroundColor = theme === "dark" ? "#101010" : "#f3f3f3";
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img src="assets/logo-biblioteca.png" alt="Biblioteca Pública Municipal Dr. Octávio Augusto Borges" class="brand-logo" />
+      </div>
+      <div class="header-actions">
+        <button type="button" id="themeToggle" class="theme-toggle btn-secondary" aria-label="Ativar modo escuro">
+          <span class="theme-icon" aria-hidden="true"></span>
+        </button>
+        <div class="stats">
+          <div class="stat-card">
+            <span>Livros</span>
+            <strong id="booksCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <span>Leitores</span>
+            <strong id="clientsCount">0</strong>
+          </div>
+          <div class="stat-card danger" id="overdueCard">
+            <span>Atrasados</span>
+            <strong id="overdueCount">0</strong>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <nav class="page-nav">
+      <a class="nav-link" href="index.html">Empréstimos</a>
+      <a class="nav-link active" href="livros.html">Livros</a>
+      <a class="nav-link" href="clientes.html">Leitores</a>
+    </nav>
+
+    <main class="single-layout">
+      <section class="panel panel-wide">
+        <h2>Livros</h2>
+        <form id="bookForm" class="form-grid">
+          <input type="text" id="bookId" placeholder="ID do livro" inputmode="numeric" required />
+          <input type="text" id="bookTitle" placeholder="Título" required />
+          <input type="text" id="bookAuthor" placeholder="Autor" required />
+          <input type="text" id="bookLocation" placeholder="Local" required />
+          <input type="text" id="bookGenre" placeholder="Gênero" required />
+          <input type="text" id="bookPublisher" placeholder="Editora" required />
+          <button type="submit" class="btn-primary">Salvar livro</button>
+        </form>
+
+        <div class="table-tools">
+          <label class="search-with-icon" aria-label="Buscar livro">
+            <span class="search-icon" aria-hidden="true">
+              <svg class="inline-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="11" cy="11" r="6.5"></circle>
+                <path d="M16 16L21 21"></path>
+              </svg>
+            </span>
+            <input type="search" id="booksSearch" placeholder="Buscar livro" />
+          </label>
+          <button type="button" id="exportBooksBtn" class="action-btn btn-secondary compact"><svg class="inline-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 3V15"></path><path d="M8 11L12 15L16 11"></path><path d="M4 17V19.5C4 20.33 4.67 21 5.5 21H18.5C19.33 21 20 20.33 20 19.5V17"></path></svg>Exportar Excel</button>
+        </div>
+
+        <div class="table-wrap">
+        <table class="books-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Título</th>
+              <th>Autor</th>
+              <th>Local</th>
+              <th>Gênero</th>
+              <th>Editora</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="booksTable"></tbody>
+        </table>
+        </div>
+      </section>
+    </main>
+
+
+    <div id="bookEditModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="bookEditTitleLabel">
+      <div class="modal-card">
+        <h3 id="bookEditTitleLabel">Editar livro</h3>
+        <form id="bookEditForm" class="form-grid modal-grid">
+          <input type="text" id="bookEditId" placeholder="ID do livro" inputmode="numeric" required />
+          <input type="text" id="bookEditTitle" placeholder="Título" required />
+          <input type="text" id="bookEditAuthor" placeholder="Autor" required />
+          <input type="text" id="bookEditLocation" placeholder="Local" required />
+          <input type="text" id="bookEditGenre" placeholder="Gênero" required />
+          <input type="text" id="bookEditPublisher" placeholder="Editora" required />
+          <div class="modal-actions">
+            <button type="button" class="action-btn btn-secondary" id="bookEditCancel">Cancelar</button>
+            <button type="submit" class="btn-primary">Salvar alterações</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
